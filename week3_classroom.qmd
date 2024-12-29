@@ -144,6 +144,13 @@ month_info <- data.frame(
 month_info
 ```
 
+## Multiple Data Frames
+
+Note that we now have multiple data frames loaded into our environment.  It is common in R to be working with multiple data frames at the same time.  You can see the data frames (and other objects) in the environment in the Environment tab over to the right in RStudio.  The `penguins` data frame may not show up in the environment until you change it (because it's part of a package); to force it to show, run `data(penguins)` and then view it (type `penguins` in the console).
+
+The examples and exercises below jump between several of these data frames.  Remember, use the Environment tab to check what's in your environment.
+
+
 # Data Frame Basics
 
 -   Rectangles of data
@@ -258,11 +265,13 @@ Challenge: How many total degrees were issued each year? How many total degrees 
 
 ```
 
-## Computing summary measures {Remove from W3 - put in W1/2
+## Computing summary measures
 
 Summary statistics provide a concise overview of the characteristics of a dataset, offering insights into its central tendency, dispersion, and distribution.
 
-Base R provides several built-in functions for computing summary statistics, including summary(), mean(), median(), min(), max(), quantile(), sd(), and var().
+Base R provides several built-in functions for computing summary statistics, including summary(), mean(), median(), min(), max(), quantile(), sd(), and var().  We saw these briefly before.
+
+These functions operate on a vector.  Let's try them with the `bill_depth_mm` variable: 
 
 ```{r}
 mean(penguins$bill_depth_mm)
@@ -282,7 +291,7 @@ max(penguins$bill_depth_mm, na.rm = TRUE)
 
 ## EXERCISE
 
-What is the minimum and maximum age of respondents in the cervical cancer dataset?
+What is the minimum and maximum age of respondents in the cervical cancer dataset that you imported above?
 
 ```{r}
 
@@ -326,19 +335,19 @@ View(penguins)
 
 ### EXERCISE
 
-Using `month_info`: make a new variable as part of `month_info`, called `weeks`, that is the number of days divided by 7.
+Using `month_info` (small data frame created manually above): make a new variable as part of `month_info`, called `weeks`, that is the number of days divided by 7.
 
 ```{r}
 
 ```
 
-Make a new column in the degrees data with the total number of degrees awarded each year
+Make a new column in the degrees data (loaded in an exercise above from `"data/nu_degrees.csv"`) with the total number of degrees awarded each year
 
 ```{r}
 
 ```
 
-Challenge: Make a new logical column called `long_month` that is TRUE if the month has 31 days
+Challenge: Make a new logical column called `long_month` as a part of `month_info` that is TRUE if the month has 31 days
 
 ```{r}
 
@@ -451,7 +460,7 @@ month_info[c(1, 3), ]
 Using the Northwestern degree data set from above: select rows 2 through 5, and columns 1 through 2
 
 ```{r}
-degrees[2:5, 1:2]
+
 ```
 
 ### Indexing by Name
@@ -495,7 +504,7 @@ month_info[ 2:4 , c("days", "month")]
 
 ### Tidy Data
 
-Tidy data is a consistent way to organise your data in R. Once you have tidy data and the tidy tools provided by packages in the tidyverse, you will spend much less time munging data from one representation to another, allowing you to spend more time on the analytic questions at hand.
+Tidy data is a consistent way to organise your data. Once you have tidy data and the tidy tools provided by packages in the tidyverse, you will spend much less time munging data from one representation to another, allowing you to spend more time on the analytic questions at hand.
 
 There are 3 inter-related rules which make a dataset tidy:
 
@@ -632,7 +641,7 @@ We name the column we're mutating and set the value. If the name already exists,
 ```{r, eval=TRUE}
 cer %>% 
   mutate(is_minor = Age_of_Respondents < 18) %>% 
-  names # look at column names
+  names() # look at column names
 ```
 
 We can put multiple mutations in the same call to mutate, with the expressions separated by commas:
@@ -641,7 +650,7 @@ We can put multiple mutations in the same call to mutate, with the expressions s
 cer %>% 
   mutate(is_minor = Age_of_Respondents < 18,
          is_senior = Age_of_Respondents > 65) %>% 
-  names
+  names()
 ```
 
 ### EXERCISE
@@ -724,9 +733,9 @@ Note that so far, we haven't actually changed the `cer` data frame at all. We've
 Sometimes we may still want to save the result of some expression, such as after performing a bunch of data cleaning steps. We can assign the output of piped commands as we would with any other expression:
 
 ```{r}
-cer_minors <- cer %>%
-  filter(is_minor = Age_of_Respondents < 18) %>%
-  select(Is_Diagnosed_with_STDs, Is_Smoking) 
+cer_subset <- cer %>%
+  mutate(is_minor = Age_of_Respondents < 18) %>% 
+  select(Age_of_Respondents, Smoking_in_Packs_per_Year, is_minor)
 ```
 
-### 
+

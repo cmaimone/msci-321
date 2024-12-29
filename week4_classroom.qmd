@@ -25,7 +25,7 @@ cer <- read_csv("data/cervical_cancer_data.csv")
 spec(cer)
 ```
 
-Note we used the `read_csv` function from the package `{readr}` this time. Run `spec(cer)` to see what changed with the import.
+Note we used the `read_csv` function from the package `{readr}` this time. Run `spec(cer)` to see what changed with the import (run `str(read.csv("data/cervical_cancer_data.csv"))` for comparison if needed).
 
 ## Working with variables (columns)
 
@@ -94,9 +94,24 @@ For example, let's suppose you want to find respondents in the `cer` dataset who
 cer$Age_of_Respondents
 cer$Age_of_Respondents > 18
 cer[cer$Age_of_Respondents > 18,]
+
+# cer$is_minor was created above
+cer$is_minor
+cer[cer$is_minor, ]
 ```
 
 The command above works because R selects the values which evaluated to TRUE and discards the values that evaluated to FALSE.
+
+What if we wanted to know how many observations meet a specific condition?  We can use `sum()` to count TRUE values (because TRUE = 1 and FALSE = 0):
+
+```{r}
+sum(cer$Age_of_Respondents > 18)
+sum(cer$is_minor)
+
+# count the opposite by using ! (not)
+sum(!cer$is_minor)
+```
+
 
 Let's see an example with the penguins data frame: Select rows where penguin bill length is greater than 34.
 

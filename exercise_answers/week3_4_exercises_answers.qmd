@@ -1,0 +1,383 @@
+---
+title: "Exercises: Data Frames (Answers)"
+format: html
+project:
+  execute-dir: project
+editor_options: 
+  chunk_output_type: console
+---
+
+Exercises to practice working with data frames.  There are multiple ways you might do many of these exercises.  Just because your code doesn't match the answer key exactly doesn't mean it's wrong.  Please ask the instructors if you have questions.
+
+```{r}
+library(tidyverse)
+library(janitor)
+```
+
+
+# Following Week 3 Material
+
+## Exercise 
+
+Load `data/diabetes.csv`.  Basic information on the dataset is available here: https://hbiostat.org/data/repo/diabetes
+
+
+```{r}
+diabetes <- read_csv("data/diabetes.csv")
+```
+
+
+## Exercise 
+
+What are the names of the variables in the data?
+
+```{r}
+names(diabetes)
+
+# or, with variable types 
+str(diabetes)
+```
+
+
+## Exercise 
+
+How many observations are in the data?
+
+```{r}
+nrow(diabetes)
+```
+
+
+## Exercise 
+
+What is the average age of study participants?
+
+```{r}
+mean(diabetes$age)
+```
+
+
+## Exercise 
+
+What is the standard deviation of age?
+
+```{r}
+sd(diabetes$age)
+```
+
+
+## Exercise 
+
+Plot a histogram of the age variable.  Plot a histogram of A1C (glyhb)
+
+```{r}
+hist(diabetes$age)
+hist(diabetes$glyhb)
+```
+
+
+
+## Exercise 
+
+What is the average systolic blood pressure (1st reading)?
+
+```{r}
+mean(diabetes$bp.1s, na.rm=TRUE)
+```
+
+
+## Exercise 
+
+Make a frequency table of participant gender (how many participants are male? how many female?)
+
+```{r}
+table(diabetes$gender, useNA="ifany")
+
+# from Week 4:
+count(diabetes, gender) # this won't work for making a bar plot directly
+```
+
+
+## Challenge Exercise
+
+Make a bar plot of gender.  To do this, 
+
+1. Find the function for making a bar plot (use your research skills).  Use the built-in R function, not ggplot2.
+2. Supply the output of the frequency table for gender to the function (the bar plot function wants the count of each category, not the raw vector)
+
+```{r}
+barplot(table(diabetes$gender, useNA="ifany"))
+```
+
+
+
+## Exercise 
+
+Save a subset of the diabetes data in a new variable without the columns bp.2s, bpp.2d, or time.ppn in it
+
+```{r}
+diabetes_sub <- select(diabetes, -bp.2s, -bp.2d, -time.ppn)
+
+# or (riskier, if column order changes)
+diabetes_sub <- diabetes[, -c(15, 16, 19)]
+```
+
+
+
+## Exercise 
+
+Make a new variable in the data frame called `male` that is TRUE if the participant is male and FALSE otherwise.  
+
+```{r}
+diabetes$male <- diabetes$gender == "male"
+
+# or 
+diabetes <- diabetes %>%
+  mutate(male = gender == "male")
+```
+
+
+
+## Exercise 
+
+Make a new variable in the data frame called `bmi` that is calculated as: 703 * weight ÷ (height ^ 2)
+
+```{r}
+diabetes <- mutate(diabetes, bmi = 703 * weight/(height^2))
+
+#or 
+diabetes$bmi <- 703 * diabetes$weight/(diabetes$height^2)
+```
+
+
+## Exercise 
+
+What is the tallest height in the data?  What about the shortest?
+
+```{r}
+max(diabetes$height, na.rm=TRUE)
+min(diabetes$height, na.rm=TRUE)
+```
+
+
+
+
+
+# Following Week 4 Material
+
+Remember: Reload the dataset (first exercise above) if you don't have it in your environment anymore.
+
+
+## Exercise 
+
+How many participants have A1C (glyhb) levels above 7?
+
+```{r}
+sum(diabetes$glyhb > 7, na.rm=TRUE)
+```
+
+
+## Exercise 
+
+What proportion of participants have A1C levels above 7?
+
+```{r}
+sum(diabetes$glyhb > 7, na.rm=TRUE)/nrow(diabetes)
+
+# or 
+diabetes %>%
+  mutate(high_a1c = diabetes$glyhb > 7) %>%
+  tabyl(high_a1c)
+```
+
+
+## Exercise 
+
+What is the average height for each gender?
+
+```{r}
+diabetes %>%
+  group_by(gender) %>%
+  summarize(mean(height, na.rm=TRUE))
+
+# or 
+mean(diabetes$height[diabetes$gender == "male"], na.rm=TRUE)
+mean(diabetes$height[diabetes$gender == "female"], na.rm=TRUE)
+```
+
+
+## Exercise 
+
+How many participants have each frame size?
+
+```{r}
+table(diabetes$frame, useNA="ifany")
+
+# or
+count(diabetes, frame)
+
+# or 
+tabyl(diabetes, frame)
+```
+
+
+## Exercise 
+
+What is the average A1C (glyhb) of participants with a weight > 250?
+
+```{r}
+diabetes %>%
+  filter(weight > 250) %>%
+  summarize(mean(glyhb, na.rm=TRUE))
+
+# or
+mean(diabetes$glyhb[diabetes$weight > 250], na.rm=TRUE)
+```
+
+
+## Challenge Exercise
+
+What proportion of the participants over age 60 have an A1C > 7?
+
+Note: this is only a "challenge" question because it requires more steps/is a bit trickier than the other questions.  But you know everything you need to do this.
+
+```{r}
+diabetes %>%
+  filter(age > 60) %>%
+  summarize(sum(glyhb > 7, na.rm=TRUE)/n())
+
+# or
+diabetes %>%
+  filter(age > 60) %>%
+  mutate(high_a1c = glyhb > 7) %>%
+  tabyl(high_a1c)
+
+# or 
+sum(diabetes$glyhb[diabetes$age > 60] > 7, na.rm=TRUE)/sum(diabetes$age > 60)
+```
+
+
+
+## Exercise
+
+What is the average cholesterol, hdl cholesterol, systolic blood pressure (use just 1st reading), and diastolic blood pressure (use just first reading) by 
+location? 
+
+Challenge: compute this with `across()` instead of typing out the expression for each variable individually.
+
+
+```{r}
+diabetes %>%
+  group_by(location) %>%
+  summarize(mean(chol, na.rm=TRUE),
+            mean(hdl, na.rm=TRUE),
+            mean(bp.1s, na.rm=TRUE),
+            mean(bp.1d, na.rm=TRUE))
+
+# challenge:
+diabetes %>%
+  group_by(location) %>%
+  summarize(across(c(chol, hdl, bp.1s, bp.1d), \(x)mean(x, na.rm=TRUE)))
+
+# challenge:
+diabetes %>%
+  group_by(location) %>%
+  select(chol, hdl, bp.1s, bp.1d) %>%
+  summarize(across(everything(), \(x)mean(x, na.rm=TRUE)))
+
+
+```
+
+
+## Challenge Exercise
+
+What is the ratio variable?  Figure it out by exploring the data and making educated guesses.
+
+```{r}
+# chol / hdl, rounded to the first decimal place
+round(diabetes$chol/diabetes$hdl, 1) 
+
+# Note: if you try to compare the above (test for equality) against diabetes$ratio, you get a lot of FALSE values due to previous rounding issues and numerical precision issues
+```
+
+
+## Exercise
+
+How many participants have the maximum height value in the data?
+
+```{r}
+diabetes %>%
+  filter(height == max(height, na.rm=TRUE))
+```
+
+
+
+## Challenge Exercise
+
+What is the weight of the shortest participant?
+
+Hint: you might want to look up the which.min function (although there are other ways to do it).  Or the slice_min function.
+
+```{r}
+diabetes$weight[which.min(diabetes$height)]
+
+# or (this leaves in missing values)
+diabetes$weight[diabetes$height == min(diabetes$height, na.rm=TRUE)]
+
+diabetes %>%
+  slice_min(height) %>%
+  select(weight)
+```
+
+Double challenge: looking at the documentation for which.max, why would it be a problem to use it to find the weight of the tallest participant?
+
+
+## Challenge Exercise
+
+How many participants have a cholesterol level more than two standard deviations above the mean?
+
+Hint: it's not 0
+
+```{r}
+diabetes %>%
+  filter(chol > mean(chol, na.rm=TRUE) + (2 * sd(chol, na.rm=TRUE)))
+
+# or 
+diabetes[diabetes$chol > mean(diabetes$chol, na.rm=TRUE) + 2 * sd(diabetes$chol, na.rm=TRUE),]
+```
+
+
+## Exercise 
+
+How many participants have a blood pressure (first reading) with systolic > 120 **and** diastolic > 80?
+
+How many participants have a blood pressure (first reading) with systolic > 120 **or** diastolic > 80?
+
+```{r}
+diabetes %>%
+  filter(bp.1s > 120, bp.1d > 80) %>%
+  nrow()
+
+diabetes %>%
+  filter(bp.1s > 120 | bp.1d > 80) %>%
+  nrow()
+```
+
+
+## Challenge Exercise
+
+Who is the youngest patient with A1C (glyhb) > 7?
+
+```{r}
+diabetes %>%
+  filter(glyhb > 7) %>%
+  slice_min(age)
+
+# or
+high_a1c <- diabetes[diabetes$glyhb > 7, ]
+high_a1c[which.min(high_a1c$age),]
+```
+
+
+
+

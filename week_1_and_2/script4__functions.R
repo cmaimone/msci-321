@@ -40,6 +40,10 @@ var(x)
 
 length(x)
 
+# we can also make basic plots:
+hist(x)
+
+
 
 # TRY IT ----
 

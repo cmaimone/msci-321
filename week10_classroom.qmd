@@ -1,0 +1,359 @@
+---
+title: "Week 10"
+format: html
+---
+
+This week, we're going to work together to investigate a new dataset.  
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(infer)  # basic statistical tests in a tidyverse workflow
+```
+
+# Cervical Cancer Data
+
+Download the data from Canvas.  There's also a data dictionary file.  
+
+The dataset is available from https://archive.ics.uci.edu/dataset/383/cervical+cancer+risk+factors or https://www.johnsnowlabs.com/marketplace/cervical-cancer-screening/ 
+
+```{r}
+x <- read_csv("data/cervical_cancer_data.csv")
+```
+
+## Dataset basics
+
+```{r}
+dim(x)
+names(x)
+
+x <- clean_names(x)
+names(x)
+```
+
+```{r}
+#| eval: false
+View(x)
+```
+
+How many observations are missing per variable?
+
+If we just want to view the values:
+
+```{r}
+summary(x)
+```
+
+If we might want to do something with the counts, or to see them in a cleaner format: 
+
+```{r}
+x %>%
+  summarize(across(everything(), ~sum(is.na(.x))))
+
+# make this easier to view:
+x %>%
+  summarize(across(everything(), ~sum(is.na(.x)))) %>%
+  pivot_longer(everything()) %>%
+  mutate(prop = round(value/nrow(x), 2))
+```
+
+
+## Outcome Varibles
+
+What are the dependent/outcome variables?  They're towards the end of the columns:
+
+```{r}
+table(x$is_diagnosed, useNA = "ifany")
+```
+
+```{r}
+table(x$is_diagnosis_cancer, useNA = "ifany")
+```
+
+```{r}
+table(x$is_diagnosis_cin, useNA = "ifany")
+```
+
+CIN = cervical intraepithelial neoplasia
+
+```{r}
+table(x$is_diagnosis_hpv, useNA = "ifany")
+```
+
+No missing data in the outcome variables. 
+
+Can people be diagnosed with more than one thing?  Probably, given the "is_diagnosed" counts.  Let's check: 
+
+```{r}
+x %>%
+  select(contains("is_diagnosis")) %>%
+  rowSums() %>%
+  table()
+```
+
+Yes - same person can have multiple diagnoses.  So what proportion of observations have some diagnosis?
+
+```{r}
+sum(x$is_diagnosed)/nrow(x)
+```
+
+## STDs
+
+What about number of STDs?
+
+```{r}
+table(x$number_of_std_diagnosis, useNA = "ifany")
+```
+
+Hmm, should we assume that missing is 0? Probably, but let's check some other variables to make sure
+
+```{r}
+table(x$is_diagnosed_with_st_ds, useNA = "ifany")
+```
+
+Looks like there are some observations where number_of_std_diagnosis should be 0, and others that are actually missing.  The 79 observations with TRUE for is_diagnosed_with_st_ds doesn't match though the number of observations with a positive value of is_diagnosed_with_st_ds.  Maybe we should compute this ourselves.
+
+There are a series of "is_std_..." variables, but there are some groupings, such as is_std_condylomatosis, is_std_cervical_condylomatosis, is_std_vaginal_condylomatosis, is_std_vulvoperineal_condylomatosis:
+
+```{r}
+x %>%
+  filter(is_std_condylomatosis) %>%
+  select(is_std_condylomatosis, is_std_cervical_condylomatosis, 
+         is_std_vaginal_condylomatosis, is_std_vulvoperineal_condylomatosis)
+```
+
+
+```{r}
+x %>%
+  filter(is_std_condylomatosis) %>%
+  select(is_std_cervical_condylomatosis, 
+         is_std_vaginal_condylomatosis, 
+         is_std_vulvoperineal_condylomatosis) %>%
+  rowSums() %>%
+  table()
+```
+
+```{r}
+x %>%
+  filter(!is_std_condylomatosis) %>%
+  select(is_std_cervical_condylomatosis, 
+         is_std_vaginal_condylomatosis, 
+         is_std_vulvoperineal_condylomatosis) %>%
+  rowSums() %>%
+  table()
+```
+
+What about HIV and AIDS?
+
+```{r}
+tabyl(x, is_std_aids, is_std_hiv)
+```
+
+
+Let's count STDs ourselves
+
+```{r}
+stdcount <- x %>%
+  select(is_std_condylomatosis, is_std_syphilis, 
+           is_std_pelvic_inflammatory_disease,  
+           is_std_genital_herpes, 
+           is_std_molluscum_contagiosum, 
+           is_std_hiv, is_std_hepatitis_b,
+           is_std_hpv) %>%
+  rowSums(na.rm=TRUE)
+table(stdcount, useNA = "ifany")
+
+std_not_missing <- x %>%
+  select(is_std_condylomatosis, is_std_syphilis, 
+           is_std_pelvic_inflammatory_disease,  
+           is_std_genital_herpes, 
+           is_std_molluscum_contagiosum, 
+           is_std_hiv, is_std_hepatitis_b,
+           is_std_hpv) %>%
+  mutate(across(everything(), \(x) !is.na(x))) %>%
+  rowSums(na.rm=TRUE)
+table(std_not_missing, useNA = "ifany")
+
+x$std_count <- ifelse(std_not_missing > 0, stdcount, NA)
+
+tabyl(x, std_count, number_of_std_diagnosis)
+```
+Most of the counts are the same - what's up with the 3 that are different?
+
+```{r}
+#| eval: false
+x %>%
+  filter(std_count == 2, number_of_std_diagnosis == 1) %>%
+  View()
+```
+
+Not sure - maybe they just counted wrong?
+
+## Relationships
+
+Are people with an STD (any type) more likely to have a cervical cancer diagnosis?
+
+```{r}
+x %>%
+  filter(!is.na(std_count)) %>%
+  mutate(has_std = std_count > 0) %>%
+  tabyl(is_diagnosis_cancer, has_std)
+
+x %>%
+  filter(!is.na(std_count)) %>%
+  mutate(has_std = std_count > 0) %>%
+  tabyl(is_diagnosis_cancer, has_std) %>%
+  adorn_percentages(denominator = "col") %>%
+  adorn_pct_formatting()
+
+# with the infer package
+x %>%
+  filter(!is.na(std_count)) %>%
+  mutate(has_std = std_count > 0) %>%
+  chisq_test(is_diagnosis_cancer ~ has_std)
+```
+
+Not enough evidence for a statistical difference.
+
+What about some of the other variables?  Remember that we only have 18 cases of cancer diagnosis.  But let's take a preliminary look:
+
+```{r}
+x %>%
+  group_by(is_diagnosis_cancer) %>%
+  summarize(age = mean(age_of_respondents, na.rm=TRUE),
+            smoking = sum(is_smoking, na.rm=TRUE)/sum(!is.na(is_smoking)),
+            pregnancies = mean(number_of_pregnancies, na.rm=TRUE),
+            iud = sum(is_on_iud, na.rm=TRUE)/sum(!is.na(is_on_iud)))
+  
+```
+
+The proportion of patients with an IUD is quite different.  Let's check this.
+
+Note: This is NOT what we'd want to do in a real study - we can't just look for things that might be interesting and then test them.  But we're just exploring here.
+
+```{r}
+tabyl(x, is_diagnosis_cancer, is_on_iud) 
+```
+
+
+```{r}
+prop.test(c(77, 6), c(77+628, 18))
+```
+
+This is a weird result, because the p-value is < 0.05, but the 95% confidence interval on the true difference between the two means includes 0.  These are seemingly conflicting results -- with a p-value < 0.05 on a two-sided test, the confidence interval on the difference should not include 0.  So what's going on?
+
+Let's look at the documentation
+
+```{r}
+?prop.test
+```
+
+By default, something called the Yates's correction for continuity is applied to the result, which is used when a cell in the table has a small count.  This is generally appropriate, and it reduces the Chi-squared test statistic, increasing the p-value (making it harder to reject the null hypothesis).  But 
+
+If we turn off the correction, 
+
+```{r}
+prop.test(c(77, 6), c(77+628, 18), correct=FALSE)
+```
+
+The test result and the confidence interval are consistent with each other.  
+
+This doesn't mean that the correction is bad -- we should generally use it, as it prevents being overconfident in results based on small numbers.  Our takeaway should probably be that our sample isn't large enough for this test.  
+
+
+# Breast Cancer Data
+
+Dataset from https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic
+
+This dataset doesn't have variable names in the wdbc.data file.  We'll grab these from the documentation:
+
+```{r}
+bc_col_names <- c("id", "diagnosis", "radius1", "texture1", "perimeter1", "area1", "smoothness1", "compactness1", "concavity1", "concave_points1", "symmetry1", "fractal_dimension1", "radius2", "texture2", "perimeter2", "area2", "smoothness2", "compactness2", "concavity2", "concave_points2", "symmetry2", "fractal_dimension2", "radius3", "texture3", "perimeter3", "area3", "smoothness3", "compactness3", "concavity3", "concave_points3", "symmetry3", "fractal_dimension3")
+```
+
+There are 3 different measurements of each of 10 characteristics, from 3 different planes through the data.  
+
+```{r}
+bc <- read_csv("data/wdbc.data", 
+              col_names=bc_col_names)
+```
+
+```{r}
+#| eval: false
+dim(bc)
+View(bc)
+```
+
+These are all continuous variables.  No missing values, but double-check:
+
+```{r}
+bc %>%
+  summarize(across(everything(), ~sum(is.na(.x))))
+```
+
+
+## Outcome
+
+M = malignant, B = benign
+
+```{r}
+table(bc$diagnosis, useNA = "ifany")
+```
+
+
+## Predictor Variables
+
+This data set was used to find features that predict breast cancer - that distinguish malignant from benign cases.  The three features that the research found best distinguished between cases are: mean texture, worst area and worst smoothness.  Larger values are "worse".
+
+Let's create these variables, and then make some plots to see how they might separate the observations.
+
+```{r}
+bc <- bc %>%
+  mutate(worst_area = pmax(area1, area2, area3),
+         worst_smoothness = pmax(smoothness1, smoothness2, smoothness3)) 
+```
+
+We need to use pmax, instead of just max, because we want the maximum pairwise value -- each row -- not the overall maximum value.  If we use just max we'd get the same value for every observation.  
+
+How do we compute the mean?  The mean function only takes a single vector.  But we have 3 different variables.  There is a function in base R that can help with this: rowMeans.  There's also a similar rowSums that can come in handy.  So we could do this with base R: 
+
+```{r}
+bc$mean_texture <- rowMeans(bc[, c("texture1", "texture2", "texture3")])
+```
+
+The tidyverse approach to this is to use rowwise() and c_across().  Rowwise effectively makes each row it's own group, so a value is computed separately.  c_across makes the values across multiple columns into a vector, which can be supplied to a function like mean that expect a single vector of values.  These functions are used together.  
+
+```{r}
+bc <- bc %>%
+  rowwise() %>% 
+  mutate(mean_texture = mean(c_across(starts_with("texture")))) %>%
+  ungroup() # turns off rowwise
+```
+
+## Visualizations
+
+There are 3 main variables, but we can only plot 2 at a time.  Plot, and color by diagnosis
+
+```{r}
+bc %>%
+  ggplot(aes(x=worst_smoothness, y=worst_area, color = diagnosis)) + 
+  geom_point()
+```
+
+That does show promising separation in the groups.  Try the other two combinations:
+
+```{r}
+bc %>%
+  ggplot(aes(x=worst_smoothness, y=mean_texture, color = diagnosis)) + 
+  geom_point()
+```
+
+This pair isn't as clear.
+
+```{r}
+bc %>%
+  ggplot(aes(x=mean_texture, y=worst_area, color = diagnosis)) + 
+  geom_point()
+```
+
+

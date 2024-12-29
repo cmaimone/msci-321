@@ -1,4 +1,7 @@
-# msci-321
-Materials for MSCI 321 Biostatistics I
+# MSCI 321
 
-Materials are currently in preparation. Final versions will be available at the beginning of class.
+Materials for Northwestern University MSCI 321 Biostatistics I.
+
+Some non-public datasets can be found in Canvas.  
+
+Note: Materials may be revised until class officially starts.
