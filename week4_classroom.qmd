@@ -407,6 +407,42 @@ cer %>%
   ungroup()
 ```
 
+## Simpson's Paradox
+
+Why is grouping so important?  Because if we don't properly account for meaningful groups in our data, we can reach the wrong conclusions.  
+
+Let's look at the penguins data.  What's the correlation between bill length and depth?  We can assume they should be positively correlated - bigger penguins should have bigger beaks in both directions, right?
+
+
+```{r}
+cor(penguins$bill_depth_mm, penguins$bill_length_mm, use="pairwise.complete")
+```
+
+Hmm...that's weird.  Let's take a look:
+
+```{r}
+plot(penguins$bill_depth_mm, penguins$bill_length_mm)
+```
+
+What's going on here?  There are 3 different species of penguins in the data:
+
+```{r}
+penguins %>%
+  group_by(species) %>%
+  summarize(cor(bill_length_mm, bill_depth_mm, use="pairwise"))
+```
+
+When we compute the correlation by group, it's positive in all groups.  Let's look at the plot (we'll cover how to use ggplot more later in the course):
+
+```{r}
+ggplot(penguins, aes(bill_length_mm, bill_depth_mm, color=species)) +
+  geom_point()
+```
+
+Look at the groups in your data!  
+
+
+
 ## Arrange
 
 Finally, we come to `arrange()`, which is how we sort the rows in our data. We would mostly use this when viewing our data, but it's also useful when we need to compute a time series (lags and leads in the data), when we want to select just a few rows from each group, or any other order-sensitive transformations on our data.
