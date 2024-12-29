@@ -1,0 +1,158 @@
+---
+title: "Week 6 Exercises (Answers)"
+format: html
+project:
+  execute-dir: project
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r}
+library(tidyverse)
+library(janitor)
+```
+
+Load `data/diabetes.csv`.  Basic information on the dataset is available here: https://hbiostat.org/data/repo/diabetes
+
+
+```{r}
+diabetes <- read_csv("data/diabetes.csv")
+```
+
+
+## Exercise 
+
+
+
+```{r}
+
+```
+
+
+## Exercise 
+
+
+
+```{r}
+
+```
+
+
+## Exercise 
+
+
+
+```{r}
+
+```
+
+
+## Exercise 
+
+
+
+```{r}
+
+```
+
+
+## Exercise 
+
+
+
+```{r}
+
+```
+
+
+## Exercise 
+
+
+
+```{r}
+
+```
+
+
+## Exercise 
+
+
+
+```{r}
+
+```
+
+
+## Exercise 
+
+
+
+```{r}
+
+```
+
+
+## Exercise 
+
+
+
+```{r}
+
+```
+
+
+## Exercise 
+
+
+
+```{r}
+
+```
+
+
+## Exercise 
+
+
+
+```{r}
+
+```
+
+
+## Exercise 
+
+
+
+```{r}
+
+```
+
+
+## Exercise 
+
+
+
+```{r}
+
+```
+
+
+## Exercise 
+
+
+
+```{r}
+
+```
+
+
+## Exercise 
+
+
+
+```{r}
+
+```
+
+

@@ -203,12 +203,7 @@ age_group <- c(
   )
 
 # your code here               
-table(age_group)
 
-age_group_factor <- factor(age_group,
-       levels=c("18-24", "25-34", "35-50", "50-65", "65+"),
-       ordered = TRUE)
-age_group_factor
 
 ```
 
@@ -227,9 +222,6 @@ cer <- read_csv("data/cervical_cancer_data.csv")
 Using the `cer` dataset, convert the column `Number_of_Pregnancies` to a factor. Then recode all `NA` values into "invalid".
 
 ```{r}
-# df: 
-# col: 
-
 # make a factor
 
 # add NA as an explicit level
@@ -349,6 +341,39 @@ Challenge: What is the mean of non-missing values of `penguins$bill_depth_mm` fo
 
 ```
 
-### Correlation
+
+## Count missing values across variables
+
+What if we want to get a look at the number of missing values across our dataset?
+
+One option is the summary() function:
+
+```{r}
+summary(penguins)
+```
+
+This gives us more than the missing counts, but it does include it.
+
+We could also count them explicitly.  The across() function with summarize() lets us do the same thing to all variables.  We need to use an anonymous function to do this because we need to call both sum() and is.na().  
+
+Just like with other function in R, we declare a input argument -- here, "x", and then use x to stand in for each variable in the expression we want to compute for each column:
+
+```{r}
+penguins %>%
+  summarize(across(everything(), \(x) sum(is.na(x))))
+```
+
+There's another syntax for anonymous functions that you might see instead:
+
+```{r}
+penguins %>%
+  summarize(across(everything(), ~sum(is.na(.x))))
+```
+
+They both do the same thing.
+
+
+
+## Correlation
 
 Add missing value clauses here - extra options in the correlation function (use pairwise)

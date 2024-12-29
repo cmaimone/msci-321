@@ -209,8 +209,6 @@ Using the `penguins` data frame, write commands to figure out:
 -   What are the names of the variables?
 
 ```{r}
-# load the package
-library(palmerpenguins)
 
 
 ```
@@ -341,17 +339,18 @@ Using `month_info` (small data frame created manually above): make a new variabl
 
 ```
 
+Challenge: Make a new logical column called `long_month` as a part of `month_info` that is TRUE if the month has 31 days
+
+```{r}
+
+```
+
 Make a new column in the degrees data (loaded in an exercise above from `"data/nu_degrees.csv"`) with the total number of degrees awarded each year
 
 ```{r}
 
 ```
 
-Challenge: Make a new logical column called `long_month` as a part of `month_info` that is TRUE if the month has 31 days
-
-```{r}
-
-```
 
 ## Indexing by Position: Vectors
 

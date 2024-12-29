@@ -1,0 +1,270 @@
+---
+title: "Week 5 Exercises (Answers)"
+format: html
+project:
+  execute-dir: project
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r}
+library(tidyverse)
+library(janitor)
+```
+
+Load `data/diabetes.csv`.  Basic information on the dataset is available here: https://hbiostat.org/data/repo/diabetes
+
+
+```{r}
+diabetes <- read_csv("data/diabetes.csv")
+```
+
+
+## Exercise 
+
+Convert the gender variable to a factor.
+
+```{r}
+diabetes$gender <- factor(diabetes$gender)
+
+# or
+diabetes <- mutate(diabetes, gender = factor(gender))
+```
+
+
+## Exercise 
+
+Convert the frame variable to a factor.  Set the levels in the appropriate order.
+
+Do not make the factor ordered (because we're going to do other things with it later).
+
+```{r}
+diabetes$frame <- factor(diabetes$frame, levels=c("small", "medium", "large"))
+
+# or 
+diabetes <- mutate(diabetes, frame = factor(frame, levels=c("small", "medium", "large")))
+```
+
+
+## Exercise 
+
+Are there any missing values in the frame variable?
+
+```{r}
+sum(is.na(diabetes$frame))  # yes
+```
+
+
+## Exercise 
+
+Make missing (NA) an explicit level in the frame factor variable.  Relabel it as "unknown".
+
+```{r}
+diabetes$frame <- addNA(diabetes$frame)
+levels(diabetes$frame)[4] <- "unknown"
+
+# or
+diabetes <- mutate(diabetes, frame = addNA(frame))
+levels(diabetes$frame)[4] <- "unknown"  # there's not an easy way to do this within dplyr
+```
+
+
+## Exercise 
+
+How many observations are missing a weight?  How many are missing a height?  Are there any observations missing both?
+
+```{r}
+sum(is.na(diabetes$weight))
+sum(is.na(diabetes$height))
+
+sum(is.na(diabetes$weight) & is.na(diabetes$height)) # none missing both
+```
+
+
+## Exercise 
+
+How many observations in the data are complete (no missing values)?  
+
+What proportion of observations are complete? (hint: you need two pieces of information to compute this - you know how to get both, then combine them)
+
+```{r}
+# counting complete cases
+sum(complete.cases(diabetes))
+# or
+dim(diabetes[complete.cases(diabetes), ])
+
+# counting total observations
+nrow(diabetes)
+# or 
+length(complete.cases(diabetes))
+
+# combine them
+sum(complete.cases(diabetes))/nrow(diabetes)
+```
+
+
+## Exercise 
+
+Which column has the most missing values?
+
+```{r}
+diabetes %>%
+  summarize(across(everything(), \(x) sum(is.na(x))))
+
+# or
+summary(diabetes)
+```
+
+
+## Exercise 
+
+What's the correlation between weight and height?
+
+```{r}
+cor(diabetes$weight, diabetes$height, use="pairwise")
+```
+
+
+## Exercise 
+
+What's the correlation between weight and height by frame size?
+
+```{r}
+diabetes %>%
+  group_by(frame) %>%
+  summarize(cor(weight, height, use="pairwise"))
+```
+
+
+## Exercise 
+
+Compute a correlation matrix for the variables height, weight, waist, and hip
+
+```{r}
+cor(diabetes[,c("height", "weight", "waist", "hip")], use="pairwise")
+```
+
+
+## Challenge Exercise 
+
+You should see a surprising correlation in the answer above.  Is there another variable that might help explain that?
+
+```{r}
+diabetes %>%
+  group_by(gender) %>%
+  summarize(cor(hip, height, use="pairwise"))
+```
+
+
+## Exercise 
+
+What's the correlation between stab.glu (instant blood sugar level) and glyhb (A1C)?
+
+```{r}
+cor(diabetes$stab.glu, diabetes$glyhb, use="pairwise")
+```
+
+
+## Exercise 
+
+Plot stab.glu (instant blood sugar level) and glyhb (A1C).  
+
+```{r}
+plot(diabetes$stab.glu, diabetes$glyhb)
+```
+
+
+## Challenge Exercise 
+
+Do you see any unexpected values in the plot above?  What are the study ID numbers of two observations that stand out?
+
+```{r}
+diabetes$id[diabetes$stab.glu < 150 & diabetes$glyhb > 14]
+diabetes$id[diabetes$stab.glu > 350 & diabetes$glyhb < 6]
+```
+
+
+## Exercise 
+
+For the patients with all 4 blood pressure readings available (not missing), what is the correlation between the first and second readings?  
+
+```{r}
+# use cor() missing options
+cor(diabetes[, c("bp.1s", "bp.1d", "bp.2s", "bp.2d")], use="complete")
+
+# another option
+bps <- diabetes[, c("bp.1s", "bp.1d", "bp.2s", "bp.2d")]
+all_bp <- bps[complete.cases(bps), ]
+cor(all_bp)
+# or
+cor(all_bp$bp.1s, all_bp$bp.2s)
+cor(all_bp$bp.1d, all_bp$bp.2d)
+```
+
+
+## Exercise 
+
+Do older participants have higher blood pressure readings?
+
+```{r}
+# with correlation
+cor(diabetes$age, diabetes$bp.1s, use="pairwise")
+cor(diabetes$age, diabetes$bp.1d, use="pairwise")
+```
+
+
+## Exercise
+
+Part 1: How many participants are over 60?
+
+Part 2: Do those participants have higher blood pressures than younger participants on average?
+
+```{r}
+sum(diabetes$age > 60)
+
+diabetes %>%
+  mutate(over60 = age > 60) %>%
+  group_by(over60) %>%
+  summarize(mean(bp.1s, na.rm=TRUE),
+            mean(bp.2s, na.rm=TRUE))
+```
+
+
+## Challenge Exercise
+
+How do the LDL and HDL cholesterol levels of those who have a high blood sugar reading (on either measure) compare to those who don't have a high blood sugar reading?  Cholesterol = LDL + HDL
+
+```{r}
+diabetes %>%
+  mutate(high_sugar = glyhb > 7 | stab.glu > 120) %>%
+  group_by(high_sugar) %>%
+  summarize(mean(chol-hdl, na.rm=TRUE),
+            mean(hdl, na.rm=TRUE))
+```
+
+
+
+## Challenge Exercise
+
+Is BMI (703 * weight ÷ (height ^ 2)) or the waist-hip ratio a better predictor of blood sugar?  Is either a very good predictor?  Plotting the data may help you assess this.
+
+```{r}
+diabetes <- diabetes %>%
+  mutate(bmi = 703*weight / (height^2),
+         waist_hip = waist/hip) 
+
+diabetes %>%
+  summarize(cor(bmi, glyhb, use="pair"),
+            cor(bmi, stab.glu, use="pair"),
+            cor(waist_hip, glyhb, use="pair"),
+            cor(waist_hip, stab.glu, use="pair"))
+
+plot(diabetes$bmi, diabetes$stab.glu)
+plot(diabetes$bmi, diabetes$glyhb)
+plot(diabetes$waist_hip, diabetes$stab.glu)
+plot(diabetes$waist_hip, diabetes$glyhb)
+plot(diabetes$bmi, diabetes$waist_hip)
+```
+
+

@@ -221,6 +221,30 @@ tabyl(diabetes, frame)
 ```
 
 
+## Exercise
+
+What is the average height of people with each frame size?  Weight?
+
+```{r}
+diabetes %>%
+  group_by(frame) %>%
+  summarize(mean(height, na.rm=TRUE),
+            mean(weight, na.rm=TRUE))
+```
+
+
+## Exercise
+
+What is the average height of people with each frame size by gender?  Weight?
+
+```{r}
+diabetes %>%
+  group_by(frame, gender) %>%
+  summarize(mean(height, na.rm=TRUE),
+            mean(weight, na.rm=TRUE))
+```
+
+
 ## Exercise 
 
 What is the average A1C (glyhb) of participants with a weight > 250?
@@ -260,8 +284,7 @@ sum(diabetes$glyhb[diabetes$age > 60] > 7, na.rm=TRUE)/sum(diabetes$age > 60)
 
 ## Exercise
 
-What is the average cholesterol, hdl cholesterol, systolic blood pressure (use just 1st reading), and diastolic blood pressure (use just first reading) by 
-location? 
+What is the average cholesterol, hdl cholesterol, systolic blood pressure (use just 1st reading), and diastolic blood pressure (use just first reading) by location? 
 
 Challenge: compute this with `across()` instead of typing out the expression for each variable individually.
 
