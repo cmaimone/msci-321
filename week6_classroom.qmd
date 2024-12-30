@@ -5,6 +5,8 @@ output:
     code_download: TRUE
     toc: true
     toc_depth: 1
+project:
+  execute-dir: project
 editor_options:
   chunk_output_type: console
 ---
@@ -23,6 +25,8 @@ In most situations, the first thing that you'll want to calculate is a measure o
 air <- read.csv("data/airline_safety.csv")
 View(air)
 ```
+
+The air dataset is from: https://github.com/fivethirtyeight/data/tree/master/airline-safety
 
 R provides useful functions to calculate measures of central tendency:
 
@@ -45,6 +49,8 @@ The ***range*** of a variable is very simple: it's the biggest value minus the s
 
 ```{r}
 range(air$incidents_00_14) # range
+min(air$incidents_00_14)
+max(air$incidents_00_14)
 IQR(air$incidents_00_14) # inter-quartile range
 quantile(air$incidents_00_14, probs=c(0.25, 0.75))
 ```
@@ -70,53 +76,25 @@ You can also get an overall summary as:
 summary(air$incidents_00_14)
 ```
 
-### Correlation
-
-Calculating correlations in R can be done using the `cor()` command. The simplest way to use the command is to specify two input arguments `x` and `y`, each one corresponding to one of the variables.
-
-```{r}
-cor(air$avail_seat_km_per_week , air$incidents_00_14)
-```
-
-You can choose the correlation method from this vector `c("pearson", "kendall", "spearman")` :
-
-```{r}
-cor(air$avail_seat_km_per_week , air$incidents_00_14, method = "spearman")
-```
-
-NOTE: In all the above functions, you can handle missing values by setting `na.rm = TRUE` .
-
-However, the `cor()` function is a special case. It doesn't have an `na.rm` argument, because the story becomes a lot more complicated when more than one variable is involved. What it does have is an argument called `use` which does roughly the same thing, but you need to think little more carefully about what you want this time. Type `?cor` in the console and read through the `use` parameter options.
-
-### EXERCISE
-
-What can you say about the number of fatalities when comparing the time period 1985-1999 to the time period 2000-2014? Try a few different functions to summarize and compare these variables.
-
-```{r}
-
-```
-
-### EXERCISE
-
-Is the number of fatal incidents correlated to the number of total incidents?
-
-```{r}
-
-```
-
-### EXERCISE
-
-Does the method of calculating correlation change your inference in this case?
-
-```{r}
-
-```
 
 ## Probability Distributions
 
 Probability is a branch of mathematics that tells you how often different kinds of events will happen. The critical point is that probabilistic questions start with a known ***model*** of the world, and we use that model to do some calculations. The underlying model can be quite simple. For instance, in the coin flipping example, we can write down the model like this: $P(heads) =0.5$
 
 As you might imagine, probability distributions vary enormously, and there's an enormous range of distributions out there. However, they aren't all equally important. In fact, the vast majority of statistical tests rely on one of five distributions: binomial, normal, t, χ2 ("chi-square") and F.
+
+Wikipedia actually has useful information on the distributions, along with plots of them:
+
+* Normal: https://en.wikipedia.org/wiki/Normal_distribution
+* Binomial: https://en.wikipedia.org/wiki/Binomial_distribution
+* Chi-squared: https://en.wikipedia.org/wiki/Chi-squared_distribution
+* t: https://en.wikipedia.org/wiki/Student%27s_t-distribution
+* F: https://en.wikipedia.org/wiki/F-distribution
+
+Others that can be useful to know about:
+
+* Exponential: https://en.wikipedia.org/wiki/Exponential_distribution
+* Uniform: https://en.wikipedia.org/wiki/Continuous_uniform_distribution
 
 Frequently, you will want to simulate your experiments by drawing random variables from one of these distributions in order to test your hypotheses. For example, suppose you want to draw a random variable from a normal distribution with mean = 0 and sd = 1:
 
@@ -143,6 +121,8 @@ rbinom(n=1,      # number of experiments
        prob=0.5) # prob. of success
 ```
 
+The result is the number of successes (out of 10).
+
 And since you believe in reproducible results, you want to repeat this simulation experiment 10 times:
 
 ```{r}
@@ -150,6 +130,7 @@ rbinom(n=10,     # number of experiments
        size=10,  # coin-flips per experiment
        prob=0.5) # prob. of success
 ```
+
 
 What if now you were to simulate an unfair coin?
 
@@ -204,7 +185,7 @@ percentile_values_to_check <- c(0.50, 0.67, 0.95, 0.99)
 qnorm(percentile_values_to_check, mean=0, sd=1)
 ```
 
-What if I already have an observation, and I want to calculate the cumulative probability of this observation? I would use `pnorm()`.
+What if I already have an observation, and I want to calculate the cumulative probability (sum total of probability - area under the curve - to the left of this value) of this observation? I would use `pnorm()`.
 
 The heights of adult men in the United States are approximately normally distributed with a mean of 70 inches and a standard deviation of 3 inches. What is the probability of observing an individual with a height less than or equal to 75 inches?
 
@@ -216,8 +197,9 @@ pnorm(observation_boundary, mean=70, sd=3) # P( X <= 75)
 The probability density function (eg `dnorm()`) as the name suggests can be used to plot the probability density for example:
 
 ```{r}
-# create a vector of evenly spaced elements from -4 to 4
+# create a vector of evenly spaced values from -4 to 4
 x <- seq(-4, 4, 0.01)
+x
 
 # plot the probability density for the Normal distribution
 plot(x, dnorm(x), type = 'l')
@@ -232,9 +214,20 @@ lines(x, dnorm(x, sd=2), type = 'l', col="blue")
 
 The t distribution is a continuous distribution that looks very similar to a normal distribution, but has heavier tails. As you might expect, the relevant R functions are `dt()`, `pt()`, `qt()` and `rt()` . For the χ2 ("chi-square") distribution they are `dchisq()`, `pchisq()`, `qchisq()`, `rchisq()`, and for the F distribution they are `df()`, `pf()`, `qf()` and `rf()`.
 
+Distributions have different parameters.  The normal is defined by the mean and standard deviation.  The t distribution is defined by a different parameter: degrees of freedom (df).  
+
 ```{r}
 plot(x, dt(x, df=2), type = 'l')
+
+# compare normal to t with different degrees of freedom
+plot(x, dnorm(x), type = 'l')
+lines(x, dt(x, df=2), type='l', col = "red")
+lines(x, dt(x, df=5), type='l', col = "blue")
+lines(x, dt(x, df=15), type='l', col = "green")
+lines(x, dt(x, df=30), type='l', col = "purple")
 ```
+
+As the degrees of freedom increase for the t distribution, it becomes the same as the normal distribution.
 
 ### Practical example
 
@@ -279,18 +272,10 @@ The distribution of diastolic blood pressure is normally distributed with a mean
 
 ```
 
-### EXERCISE
-
-Using the vector `x` plot the probability density function for the t-distribution with different degrees of freedom: 1, 2, 10, and100. What do you notice? Compare the t-distribution with df=10000 to the Normal distribution.
-
-```{r}
-x <- seq(-4, 4, 0.01)
-
-```
 
 ### EXERCISE
 
-The F distribution comes up when you perform an ANOVA. Plot the probability density function for the F-distribution with degrees of freedom 1,1 or 100,100 . What do you notice?
+The F distribution comes up when you perform an ANOVA, a model to assess variance in a variable across groups or by another variable. Plot the probability density function for the F-distribution with degrees of freedom 1,1 or 100,100 . What do you notice?
 
 ```{r}
 

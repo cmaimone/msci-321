@@ -376,4 +376,44 @@ They both do the same thing.
 
 ## Correlation
 
-Add missing value clauses here - extra options in the correlation function (use pairwise)
+NOTE: from week 6 materials - update with missing options, change dataset
+
+Calculating correlations in R can be done using the `cor()` command. The simplest way to use the command is to specify two input arguments `x` and `y`, each one corresponding to one of the variables.
+
+```{r}
+cor(air$avail_seat_km_per_week, air$incidents_00_14)
+```
+
+You can choose the correlation method from this vector `c("pearson", "kendall", "spearman")` :
+
+```{r}
+cor(air$avail_seat_km_per_week, air$incidents_00_14, method = "spearman")
+```
+
+NOTE: In all the above functions, you can handle missing values by setting `na.rm = TRUE` .
+
+However, the `cor()` function is a special case. It doesn't have an `na.rm` argument, because the story becomes a lot more complicated when more than one variable is involved. What it does have is an argument called `use` which does roughly the same thing, but you need to think little more carefully about what you want this time. Type `?cor` in the console and read through the `use` parameter options.
+
+### EXERCISE
+
+What can you say about the number of fatalities when comparing the time period 1985-1999 to the time period 2000-2014? Try a few different functions to summarize and compare these variables.
+
+```{r}
+
+```
+
+### EXERCISE
+
+Is the number of fatal incidents correlated to the number of total incidents?
+
+```{r}
+
+```
+
+### EXERCISE
+
+Does the method of calculating correlation change your inference in this case?
+
+```{r}
+
+```

@@ -23,136 +23,208 @@ diabetes <- read_csv("data/diabetes.csv")
 
 ## Exercise 
 
-
+There are two drugs, A and B.  If A cures 15% of patients, and B cures 18% of patients.  Simulate an experiments where each drug is taken by 20 different patients.  Which drug cured more patients in the experiment?
 
 ```{r}
-
+rbinom(n=1, size=20, prob=.15)
+rbinom(n=1, size=20, prob=.18)
 ```
 
 
 ## Exercise 
 
-
+Repeat the exercise above, but run the experiment 10 times.  In how many instances does drug B cure more people than drug A?
 
 ```{r}
+drugA <- rbinom(n=30, size=20, prob=.15)
+drugB <- rbinom(n=30, size=20, prob=.18)
 
+sum(drugB > drugA)
 ```
 
 
 ## Exercise 
 
+* Get the mean and standard deviation of the bp.1s variable in the diabetes dataset.  
+* Create a normal distribution with this mean and standard deviation.  
+* Then compute the 75th and 90th percentiles from both the theoretical normal distribution and from the actual data.
 
+How do these compare?
 
 ```{r}
+qnorm(c(.75, .9),
+      mean=mean(diabetes$bp.1s, na.rm=TRUE),
+      sd=sd(diabetes$bp.1s, na.rm=TRUE))
 
+quantile(diabetes$bp.1s, 
+         probs=c(.75, .9),
+         na.rm=TRUE)
 ```
 
 
 ## Exercise 
 
-
+Create a new variable chol_z that converts the chol variable into z-scores.
 
 ```{r}
-
+diabetes$chol_z <- (diabetes$chol - mean(diabetes$chol, na.rm=TRUE)) /
+  sd(diabetes$chol, na.rm=TRUE)
 ```
 
 
 ## Exercise 
 
-
+Is the average height of male participants greater than that of female participants?  Use a t-test.
 
 ```{r}
-
+t.test(diabetes$height ~ diabetes$gender)
 ```
 
 
 ## Exercise 
 
-
+Is the waist to hip ratio different for male and female participants?
 
 ```{r}
+diabetes$waist_hip <- diabetes$waist / diabetes$hip
+t.test(diabetes$waist_hip ~ diabetes$gender)
+```
 
+
+
+## Exercise 
+
+Is the cholesterol level of participants with glyhb > 7 higher than those with lower glyhb levels?
+
+```{r}
+diabetes$high_a1c <- diabetes$glyhb > 7
+t.test(diabetes$chol ~ diabetes$high_a1c)
 ```
 
 
 ## Exercise 
 
-
+Compute a 95% confidence interval on the average stab.glu value
 
 ```{r}
-
+avg <- mean(diabetes$stab.glu, na.rm=TRUE) 
+se <- sd(diabetes$stab.glu, na.rm=TRUE)/sqrt(nrow(diabetes))
+avg + 1.96 * se # we have a lot of observations - using 1.96
+avg - 1.96 * se
+avg
 ```
 
 
 ## Exercise 
 
-
+Compute a 95% confidence interval on the average stab.glu value for patients 80 years old or older.
 
 ```{r}
-
+tval <- qt(.05/2, sum(diabetes$age >= 80) - 1)
+avg <- mean(diabetes$stab.glu[diabetes$age >= 80], na.rm=TRUE) 
+se <- sd(diabetes$stab.glu[diabetes$age >= 80], na.rm=TRUE)/sqrt(sum(diabetes$age >= 80))
+avg + tval * se
+avg - tval * se
+avg
 ```
 
 
 ## Exercise 
 
-
+For participants with 2 blood pressure readings, is the second reading higher than the first?
 
 ```{r}
+# Order matters here!  Second value will be subtracted from first value
+t.test(diabetes$bp.2s, diabetes$bp.1s, paired=TRUE)
+t.test(diabetes$bp.2d, diabetes$bp.1d, paired=TRUE)
 
+# could specify the alternative since "greater" is in the question:
+t.test(diabetes$bp.2s, diabetes$bp.1s, paired=TRUE, alternative = "greater")
+t.test(diabetes$bp.2d, diabetes$bp.1d, paired=TRUE, alternative = "greater")
+
+# check that the differences are the right direction:
+mean(diabetes$bp.2s - diabetes$bp.1s, na.rm=TRUE)
+# second reading values are on average LOWER than first reading values
 ```
 
 
 ## Exercise 
 
-
+Create two random samples of 20 participants each from the diabetes data.  Is the mean stab.glu value different for the two samples?
 
 ```{r}
+sample1 <- sample(diabetes$stab.glu, 20)
+sample2 <- sample(diabetes$stab.glu, 20)
+t.test(sample1, sample2)
 
+# to sample participants instead of just the values:
+sample1 <- diabetes[sample.int(nrow(diabetes), 20), ]
+sample2 <- diabetes[sample.int(nrow(diabetes), 20), ]
+t.test(sample1$stab.glu, sample2$stab.glu)
+
+# with tidyverse
+sample1 <- slice_sample(diabetes, n=20)
+sample2 <- slice_sample(diabetes, n=20)
+t.test(sample1$stab.glu, sample2$stab.glu)
 ```
 
 
 ## Exercise 
 
-
+What is the correlation between the two blood sugar measures (glyhb, stab.glu)? Is it significantly different from 0?
 
 ```{r}
-
+cor.test(diabetes$stab.glu, diabetes$glyhb, use="pairwise")
 ```
 
 
 ## Exercise 
 
-
+Is the proportion of women in the data with glyhb > 7 higher than the proportion of men with glyhb > 7?
 
 ```{r}
+diabetes$high_a1c <- diabetes$glyhb > 7
+table(diabetes$high_a1c, diabetes$gender)
+table(diabetes$gender[!is.na(diabetes$high_a1c)]) ## important to remove missing - otherwise proportions are different
+prop.test(c(34, 26), c(228, 162))
 
+# all in one
+# using ! with diabetes$high_a1c to get the table in the expected order
+prop.test(table(diabetes$gender, !diabetes$high_a1c))
+
+# with infer package:
+library(infer)
+diabetes %>% 
+  mutate(high_a1c = glyhb > 7) %>%
+  prop_test(high_a1c ~ gender)
 ```
 
 
 ## Exercise 
 
-
+What percentile is a participant with a glyhb value of 12?
 
 ```{r}
+sum(diabetes$glyhb <= 12, na.rm=TRUE)/sum(!is.na(diabetes$glyhb))
 
+# reverse (won't match exactly, due to how quantiles are computed):
+quantile(diabetes$glyhb, .9666, na.rm=TRUE)
 ```
 
 
-## Exercise 
+## Challenge Exercise 
 
+Which of the variables in the diabetes data are notably skewed?  Meaning that the distribution is not symmetrical around the mean - based on human estimation, not a statistical test.  Look at stab.glu, glyhb, chol, hdl, bp.1s, bp.1d
 
-
-```{r}
-
-```
-
-
-## Exercise 
-
-
+There are a few different ways you could investigate this - computing summary measures and plotting can both be useful.  If you're plotting, the boxplot() function might be useful.
 
 ```{r}
+boxplot(diabetes$chol)
+hist(diabetes$chol)
 
+# The following would generally be considered skewed: stab.glu, glyhb, hdl 
+# the following aren't very skewed: chol, bp.1d, bp.1s (this one is a little off because it's truncated at 0, but it's still roughly normal)
 ```
+
 
 
