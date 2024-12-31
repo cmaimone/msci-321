@@ -61,7 +61,7 @@ Let's see what happens if we bypass the `print()` formula, and try to print out 
 print.default(my_formula)
 ```
 
-Hm. You can kind of see that it is trying to print out the same formula, but there's a bunch of ugly low-level details that have also turned up on screen. This is because the `print.default()` method doesn't know anything about formulas, and doesn't know that it's supposed to be hiding the obnoxious internal gibberish that R produces sometimes.
+Hmm. You can kind of see that it is trying to print out the same formula, but there's a bunch of ugly low-level details that have also turned up on screen. This is because the `print.default()` method doesn't know anything about formulas, and doesn't know that it's supposed to be hiding the obnoxious internal gibberish that R produces sometimes.
 
 ### EXERCISE
 
@@ -89,7 +89,7 @@ Hm. You can kind of see that it is trying to print out the same formula, but the
 
 ### The χ2 goodness-of-fit test
 
-The χ2 (chi-squared) tests are most commonly used to test whether two categorical variables are independent. To use it, we must first construct a contingency table, i.e. a table showing the counts for different combinations of categories, typically using `table`. Here is an example with the `diamonds` data from `ggplot2`:
+The χ2 (chi-squared) tests are most commonly used to test whether two categorical variables are independent. To use it, we must first construct a contingency table, i.e. a table showing the counts for different combinations of categories, typically using `table`. Here is an example with the `diamonds` data from `ggplot2`:
 
 ```{r}
 library(ggplot2)
@@ -311,7 +311,7 @@ Test the correlation between flipper length and body mass in `penguins` with a f
 
 ### ANOVA
 
-ANOVA extends the idea of a t-test to more groups. We can see if the average values of a continuous variable are different for different groups. We use `aov()` to run the model. Let's see how this works with the `penguins` data:
+ANOVA extends the idea of a t-test to more groups. We can see if the average values of a continuous variable are different for different groups. We use `aov()` to run the model. Let's see how this works with the `penguins` data:
 
 ```{r}
 aov(body_mass_g ~ species, data = penguins)

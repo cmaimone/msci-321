@@ -178,27 +178,6 @@ cor.test(diabetes$stab.glu, diabetes$glyhb, use="pairwise")
 ```
 
 
-## Exercise 
-
-Is the proportion of women in the data with glyhb > 7 higher than the proportion of men with glyhb > 7?
-
-```{r}
-diabetes$high_a1c <- diabetes$glyhb > 7
-table(diabetes$high_a1c, diabetes$gender)
-table(diabetes$gender[!is.na(diabetes$high_a1c)]) ## important to remove missing - otherwise proportions are different
-prop.test(c(34, 26), c(228, 162))
-
-# all in one
-# using ! with diabetes$high_a1c to get the table in the expected order
-prop.test(table(diabetes$gender, !diabetes$high_a1c))
-
-# with infer package:
-library(infer)
-diabetes %>% 
-  mutate(high_a1c = glyhb > 7) %>%
-  prop_test(high_a1c ~ gender)
-```
-
 
 ## Exercise 
 
@@ -210,6 +189,31 @@ sum(diabetes$glyhb <= 12, na.rm=TRUE)/sum(!is.na(diabetes$glyhb))
 # reverse (won't match exactly, due to how quantiles are computed):
 quantile(diabetes$glyhb, .9666, na.rm=TRUE)
 ```
+
+
+## Exercise
+
+How many standard deviations above average is a participant with a systolic blood pressure of 170?
+
+```{r}
+(170 - mean(diabetes$bp.1s, na.rm=TRUE))/sd(diabetes$bp.1s, na.rm=TRUE)
+```
+
+
+## Exercise
+
+Is the height of male participants from the locations the same?
+
+```{r}
+diabetes %>%
+  filter(gender == "male") %>%
+  group_by(location) %>%
+  summarize(mean(height))
+
+t.test(height ~ location, data = diabetes[diabetes$gender == "male",])
+
+```
+
 
 
 ## Challenge Exercise 

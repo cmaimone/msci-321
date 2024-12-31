@@ -1,0 +1,167 @@
+---
+title: "Week 7 Exercises (Answers)"
+format: html
+project:
+  execute-dir: project
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r}
+library(tidyverse)
+library(janitor)
+```
+
+Load `data/diabetes.csv`.  Basic information on the dataset is available here: https://hbiostat.org/data/repo/diabetes
+
+
+```{r}
+diabetes <- read_csv("data/diabetes.csv")
+```
+
+
+## Exercise 
+
+Is the proportion of women in the data with glyhb > 7 higher than the proportion of men with glyhb > 7?
+
+```{r}
+# with prop.test
+diabetes$high_a1c <- diabetes$glyhb > 7
+table(diabetes$high_a1c, diabetes$gender)
+table(diabetes$gender[!is.na(diabetes$high_a1c)]) ## important to remove missing - otherwise proportions are different
+prop.test(c(34, 26), c(228, 162))
+
+# all in one
+# using ! with diabetes$high_a1c to get the table in the expected order
+prop.test(table(diabetes$gender, !diabetes$high_a1c))
+
+# with infer package:
+library(infer)
+diabetes %>% 
+  mutate(high_a1c = glyhb > 7) %>%
+  prop_test(high_a1c ~ gender)
+
+# equivalent to chi-squared test:
+chisq.test(diabetes$high_a1c, diabetes$gender)
+```
+
+
+
+## Exercise
+
+Make a new variable indicating whether a participant's waist measurement is greater than their hip measurement.  Is this new variable independent of gender?
+
+```{r}
+diabetes$waist_larger <- diabetes$waist > diabetes$hip
+tabyl(diabetes, waist_larger, gender) 
+chisq.test(diabetes$waist_larger, diabetes$gender)
+```
+
+
+## Exercise
+
+Run a linear regression model with glyhb as the dependent variable and physical measurements of participants (height, weight, waist, hip) and gender as predictor variables.  Which of these variables are significant predictors?
+
+```{r}
+reg1 <- lm(glyhb ~ gender + height + weight + waist + hip, data = diabetes)
+summary(reg1)
+```
+
+
+## Exercise
+
+Is frame size independent of the height of participants?
+
+What if you compute it by gender?
+
+```{r}
+# look at the values first:
+diabetes %>%
+  group_by(frame) %>%
+  summarize(avg_height = mean(height, na.rm=TRUE)) 
+
+diabetes %>%
+  group_by(frame, gender) %>%
+  summarize(avg_height = mean(height, na.rm=TRUE)) %>%
+  # put in a table format:
+  pivot_wider(names_from=gender, values_from=avg_height)
+
+# how many participants in each group?
+tabyl(diabetes, frame, gender)
+
+aov(height ~ frame, data = diabetes) %>% summary()
+
+aov(height ~ frame, data = diabetes[diabetes$gender == "male", ]) %>% summary()
+aov(height ~ frame, data = diabetes[diabetes$gender == "female", ]) %>% summary()
+
+# results above are different than for a two-way anova
+aov(height ~ frame + gender, data = diabetes) %>% summary()
+# because they're testing slightly different things
+
+```
+
+
+## Exercise
+
+
+
+```{r}
+
+```
+
+
+## Exercise
+
+
+
+```{r}
+
+```
+
+
+## Exercise
+
+
+
+```{r}
+
+```
+
+
+## Exercise
+
+
+
+```{r}
+
+```
+
+
+## Exercise
+
+
+
+```{r}
+
+```
+
+
+## Exercise
+
+
+
+```{r}
+
+```
+
+
+## Exercise
+
+
+
+```{r}
+
+```
+
+

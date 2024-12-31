@@ -232,6 +232,28 @@ Using the `cer` dataset, convert the column `Number_of_Pregnancies` to a factor.
 
 ```
 
+## Factor Labels
+
+Sometimes we have categorical variables that are encoded in our data with integer values -- for example, 0/1 indicator variables or answers like 1, 2, 3, 4, to a survey question.  It's helpful to change these numerical values to text labels so we don't confuse anything.  And we don't want to erronously treat these variables as numerical when they're really categorical.  We can do this with factors as well.  
+
+```{r}
+my_study <- data.frame(id = c(1, 2, 3, 4, 5),
+                       study_condition = c(0, 1, 0, 0, 1),
+                       outcome = c(4, 6, 3, 4, 6))
+
+table(my_study$study_condition)  # which is treatment and which is control?
+
+my_study$study_condition <- factor(my_study$study_condition, 
+                                   levels = c(0, 1),
+                                   labels = c("control", "treatment"))
+# make sure levels and labels are in the same order above, or, even better:
+my_study$study_condition <- factor(my_study$study_condition, 
+                                   labels = c("0"="control", "1"="treatment"))
+
+table(my_study$study_condition) # much better!
+```
+
+
 # Missing Values
 
 `NA` is the symbol for missing data; it can be used with any data type

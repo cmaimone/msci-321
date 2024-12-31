@@ -1,14 +1,24 @@
+---
+output:
+  html_document:
+    df_print: paged
+    code_download: TRUE
+    toc: true
+    toc_depth: 1
+editor_options:
+  chunk_output_type: console
+---
+
 # Data Visualization with ggplot2
 
 Often, plotting your data will be much more informative than summary statistics alone. The R package *ggplot2* is the most widely used and aesthetically pleasing graphics framework available in R. It relies on a structure called the "grammar of graphics". Essentially, it follows a layered approach to describe and construct the visualization.
 
 Here is a handy [cheat sheet for ggplot2](https://statsandr.com/blog/files/ggplot2-cheatsheet.pdf)! Most users rely on the cheat-sheet because it is often difficult to remember the exact syntax and options.
 
-Load the *ggplot2* package in your workspace as below.
+*ggplot2* is loaded as part of tidyverse (or you can load it seprately)
 
 ```{r}
-# install.packages("ggplot2")
-library(ggplot2)
+library(tidyverse)
 ```
 
 ## The grammar of graphics
@@ -43,25 +53,33 @@ The syntax for constructing ggplots could be puzzling if you are a beginner or w
 
 -   The order of the layers matters, the first command/layer is executed first, and so on. Sometimes, this can make a difference in your final plot.
 
-Let's initialize a basic ggplot based on the midwest dataset:
+Let's initialize a basic ggplot.  We're going to use data from stress echocardiograms.  Details here: https://hbiostat.org/data/repo/stressecho
+
+We can read the data from the URL where it's posted: 
 
 ```{r}
 # Setup
-data(midwest, package = "ggplot2")
-View(midwest)
+stress <- read_csv("https://hbiostat.org/data/repo/stressEcho.csv")
+View(stress)
 ```
 
+There's a list of variables on the dataset description page: https://hbiostat.org/data/repo/stressecho
+
+We'll build up a plot step by step.  First, we initialize a plot:
+
 ```{r}
-ggplot(midwest) # Initialize a plot by calling the ggplot() function
+ggplot(stress) # Initialize a plot by calling the ggplot() function
 ```
 
 A blank ggplot is drawn. ggplot knows we want a plot with a given data set!
 
 ![](https://miro.medium.com/v2/resize:fit:2000/format:webp/1*mcLnnVdHNg-ikDbHJfHDNA.png){width="665"}
 
+Now we specify which variables we're using.  `bhr` is basal heart rate and `basebp` is basal blood pressure.
+
 ```{r}
-ggplot(midwest) + # Initialize a plot by calling the ggplot() function
-  aes(x=area, y=poptotal) # area and poptotal are columns in 'midwest'
+ggplot(stress) + # Initialize a plot by calling the ggplot() function
+  aes(x=bhr, y=basebp) # bhr and basebp are variables in the stress data
 ```
 
 Now ggplot knows the columns we want to plot!
@@ -79,163 +97,145 @@ Also note that `aes()` function is used to specify the X and Y axes. That's beca
 Let's make a scatterplot on top of the blank ggplot by adding points using a geom layer called `geom_point`
 
 ```{r}
-ggplot(midwest) +
-  aes(x=area, y=poptotal) +
+ggplot(stress) +
+  aes(x=bhr, y=basebp) +
   geom_point()
 ```
 
-But the scientific notation doesn't look too appealing - no problem, you can set an R option to turn it off! Options settings allow the user to set and examine a variety of global *options* which affect the way in which R computes and displays its results.
-
-```{r}
-options(scipen=999)  # turn off scientific notation like 1e+06
-
-ggplot(midwest) +
-  aes(x=area, y=poptotal) +
-  geom_point()
-```
-
-We got a basic scatterplot, where each point represents a county. However, it lacks some basic components such as the plot title, meaningful axis labels, etc. Moreover, most of the points are concentrated on the bottom portion of the plot, which is not so helpful. You will see how to rectify these in upcoming steps.
+We got a basic scatterplot, where each point represents a study observation. However, it lacks some basic components such as the plot title, meaningful axis labels, etc. We'll see how to add these later.
 
 ![](https://miro.medium.com/v2/resize:fit:2000/format:webp/1*mcLnnVdHNg-ikDbHJfHDNA.png){width="665"}
 
-## Using geoms to make other plot types
+# Other Plot Types
 
 Like `geom_point()`, there are many such geom layers such as `geom_line` , `geom_bar`, `geom_density`, `geom_histgram`, etc.
 
 ```{r}
-# histogram of county area
-ggplot(midwest) + 
-  aes(x=area) +
-  geom_histogram(bins=100)
+# histogram of bhr
+ggplot(stress) + 
+  aes(x=bhr) +
+  geom_histogram(bins=40)
 ```
 
 ```{r}
-# density plot of county area
-ggplot(midwest) + 
-  aes(x=area) +
+# density plot of bhr
+ggplot(stress) + 
+  aes(x=bhr) +
   geom_density()
 ```
 
 ```{r}
-# make a boxplot
-ggplot(midwest) + 
-  aes(x=area, y=state) +
+# make a boxplot: base blood pressure by history of hypertension
+ggplot(stress) + 
+  aes(y=basebp, x=hxofHT) +
+  geom_boxplot() 
+```
+
+ggplot2 is giving us a warning here.  This is because it expects certain types of variables (continuous vs. discrete) for different types of plots.  Here, we got a single box plot.  But we wanted one for each category of hxofHT.  We need to make hxofHT first.  
+
+We could just change it in the data frame, or we can do it temporarily with dplyr.  We're going to use it regularly, and we'd like clear labels for the variable, so let's clean it up first:
+
+```{r}
+table(stress$hxofHT)  # 0s and 1s
+
+# make a factor with labels 
+stress$hxofHT <- factor(stress$hxofHT, levels=c(0, 1), labels=c("No hypertension", "Hypertension"))
+```
+
+Now plot again:
+
+```{r}
+# make a boxplot: base blood pressure by history of hypertension
+ggplot(stress) + 
+  aes(y=basebp, x=hxofHT) +
   geom_boxplot() 
 ```
 
 ```{r}
 # make a violinplot
-ggplot(midwest) + 
-  aes(x=area, y=state) +
+ggplot(stress) + 
+  aes(y=basebp, x=hxofHT) +
   geom_violin()
 ```
 
 ## EXERCISE
 
-Load the penguins data from before by loading the `palmerpenguins` package in your workspace.
-
-Make a scatterplot of flipper length and body mass with point representations for each observation
+Make a scatterplot of basal heart rate (bhr) vs. max heart rate (maxhr) with point representations for each observation
 
 ```{r}
-library(palmerpenguins)
-data(penguins)
 
 
 ```
 
-## Adding a statistic to your plot
+# Adding another layer to your plot
 
 For now, let's just add a smoothing layer using `geom_smooth(method='lm')`. Since the `method` is set as `lm` (short for [*linear model*](http://r-statistics.co/Linear-Regression.html)), it draws the line of best fit.
 
 ```{r}
-g <- ggplot(midwest) + 
-  aes(x=area, y=poptotal) +
+ggplot(stress) + 
+  aes(x=basebp, y=mbp) + # mbp is max bp
   geom_point() + 
   geom_smooth(method="lm")  # set se=FALSE to turnoff confidence bands
-g
 ```
 
 The line of best fit is in blue. Can you find out what other `method` options are available for `geom_smooth`?(note: see `?geom_smooth`).
 
 ## EXERCISE
 
-Add a linear fit line to the `penguin_plot` from before
+Add a linear fit line to the heart rate plot from the previous exercise 
 
 ```{r}
 
 ```
 
-## EXERCISE
 
-What if I just want a smooth (non-linear) fit to the plot above? Hint: use method `"loess"`
+# Adjusting the X and Y axis limits
 
-```{r}
-
-```
-
-## Adjusting the X and Y axis limits
-
-You might have noticed that majority of points lie in the bottom of the chart which doesn't really look nice. So, let's change the Y-axis limits to focus on the lower half.
+In our previous plot, even though both variables are blood pressure readings, the axis limits are different because of where the data is.  We may want to set the range of each axis to be the same to make it clearer that max blood pressure readings are higher than baseline readings.  
 
 The X and Y axis limits can be controlled in 3 ways.
 
-### **Method 1**: By deleting the points outside the range
+## **Method 1**: xlim/ylim
 
-This will change the lines of best fit or smoothing lines as compared to the original data.
-
-This can be done by `xlim()` and `ylim()`. You can pass a numeric vector of length 2 (with max and min values) or just the max and min values themselves.
+One option is to use the `xlim()` and `ylim()` functions. You can pass a numeric vector of length 2 (with max and min values) or just the max and min values themselves.
 
 ```{r}
-g <- ggplot(midwest, aes(x=area, y=poptotal)) + 
+ggplot(stress, aes(x=basebp, y=mbp)) + 
   geom_point() + 
-  geom_smooth(method="lm")  
-g
-
-# Delete the points outside the limits
-g + 
-  xlim(c(0, 0.1)) + 
-  ylim(c(0, 1000000))   # deletes points
+  geom_smooth(method="lm")  + 
+  xlim(c(75, 325)) + 
+  ylim(c(75, 325))   
 ```
 
-In this case, the chart was not built from scratch but rather was built on top of `g`. This is because, the previous plot was stored as `g`, a ggplot object, which when called will reproduce the original plot. Using ggplot, you can add more layers, themes and other settings on top of this plot.
-
-Did you notice that the line of best fit became more horizontal compared to the original plot? This is because, when using `xlim()` and `ylim()`, the points outside the specified range are deleted and will not be considered while drawing the line of best fit (using `geom_smooth(method='lm')`). This feature might come in handy when you wish to know how the line of best fit would change when some extreme values (or outliers) are removed.
-
-### **Method 2**: Zooming In
-
-The other method to adjust the X and Y axis is to zoom in to the region of interest *without* deleting the points. This is done using `coord_cartesian()`.
-
-Let's store this plot as `g1`.
+We can also limit the ranges such that some points would be excluded:
 
 ```{r}
-g <- ggplot(midwest, aes(x=area, y=poptotal)) + 
+ggplot(stress, aes(x=basebp, y=mbp)) + 
   geom_point() + 
-  geom_smooth(method="lm")  # set se=FALSE to turnoff confidence bands
-
-# Zoom in without deleting the points outside the limits. 
-# As a result, the line of best fit is the same as the original plot.
-g1 <- g + 
-  coord_cartesian(xlim=c(0,0.1), ylim=c(0, 1000000))  # zooms in
-g1
+  geom_smooth(method="lm")  + 
+  xlim(c(75, 250)) + 
+  ylim(c(75, 250))   
 ```
 
-Since all points were considered, the line of best fit did not change.
+ggplot2 warns us that points were removed.  
 
-### **Method 3**: Using the scales layer
+The fact that the points were removed is most notable because it affects the computation of the smoothing line we added.  
+
+## **Method 2**: Using the scales layer
 
 Scales in *ggplot2* control the mapping from data to aesthetics. They take your data and turn it into something that you can see, like size, colour, position or shape. They also provide the tools that let you interpret the plot: the axes and legends. You can generate plots with ggplot2 without knowing how scales work, but understanding scales and learning how to manipulate them will give you much more control. To get an in-depth understanding of how scales work in *ggplot2* see [this book chapter on scales and guides](https://ggplot2-book.org/scales-guides).
 
 An important property of *ggplot2* is the principle that every aesthetic in your plot is associated with exactly one scale. For instance, when you write this:
 
 ```{r}
-ggplot(midwest, aes(x=area, y=poptotal)) + 
+ggplot(stress, aes(x=basebp, y=mbp)) + 
   geom_point()
 ```
 
 *ggplot2* adds a default scale for each aesthetic used in the plot:
 
 ```{r}
-ggplot(midwest, aes(x=area, y=poptotal)) + 
+ggplot(stress, aes(x=basebp, y=mbp)) + 
   geom_point() +
   scale_x_continuous() + 
   scale_y_continuous() 
@@ -244,183 +244,311 @@ ggplot(midwest, aes(x=area, y=poptotal)) +
 Inside the `scale` layer, you can add limits as:
 
 ```{r}
-scale_plot <- ggplot(midwest, aes(x=area, y=poptotal)) + 
+ggplot(stress, aes(x=basebp, y=mbp)) + 
   geom_point() +
-  scale_x_continuous(limits=c(0, 0.1)) + 
-  scale_y_continuous(limits=c(0, 1000000)) +
+  scale_x_continuous(limits=c(80, 200)) + 
+  scale_y_continuous(limits=c(80, 200)) +
   geom_smooth(method="lm")
-scale_plot
 ```
 
-Notice that, similarly to method 1, this method deletes the points outside of the range.
+Notice that, similarly to method 1, this method deletes the points outside of the range.  The xlim and ylim functions are shorthand for using the scales functions.
+
+The scale functions have the form: scale_[aesthetic]_[type of scale].
+
+Here, both variables are continuous variables, so we use continuous scales.
 
 Position scales have many more features that you can [explore](https://ggplot2-book.org/scales-position).
 
 ![](https://miro.medium.com/v2/resize:fit:2000/format:webp/1*mcLnnVdHNg-ikDbHJfHDNA.png){width="665"}
 
-## EXERCISE
+## **Method 3**: Coordinate System
 
-Limit the flipper length to values between 180 and 220 in `penguin_plot` **without** removing the original points from the best-fit line calculation
-
-```{r}
-
-```
-
-## Change the Title and Axis Labels
-
-Let's continue with our previous scatterplot of the midwest data and add the plot title and labels for the X and Y axis. This can be done in one go using the `labs()` function with `title`, `x`, and `y` arguments. Another option is to use `ggtitle()`, `xlab()`, and `ylab()`.
+The other method to adjust the X and Y axis is to zoom in to the region of interest *without* deleting the points. This is done using `coord_cartesian()`.
 
 ```{r}
-g <- ggplot(midwest, aes(x=area, y=poptotal)) + 
-  geom_point() + 
-  geom_smooth(method="lm")  # set se=FALSE to turnoff confidence bands
-
-g1 <- g + 
-  coord_cartesian(xlim=c(0,0.1), ylim=c(0, 1000000))  # zooms in
-
-# Add Title and Labels
-g1 + 
-  labs(title="Area Vs Population", 
-       subtitle="From midwest dataset", 
-       y="Population", 
-       x="Area", 
-       caption="Midwest Demographics")
-
-# or
-
-g1 + 
-  ggtitle("Area Vs Population", 
-          subtitle="From midwest dataset") + 
-  xlab("Area") + 
-  ylab("Population")
-```
-
-Excellent! So here is the full function call:
-
-```{r}
-ggplot(midwest, aes(x=area, y=poptotal)) + 
+ggplot(stress, aes(x=basebp, y=mbp)) + 
   geom_point() + 
   geom_smooth(method="lm") + 
-  coord_cartesian(xlim=c(0,0.1), ylim=c(0, 1000000)) + 
-  labs(title="Area Vs Population", 
-       subtitle="From midwest dataset", 
-       y="Population", 
-       x="Area", 
-       caption="Midwest Demographics")
+  coord_cartesian(xlim=c(80, 200), 
+                  ylim=c(80, 200))  # zooms in
 ```
+
+Since all points were considered, this method doesn't affect the fitted line.  
+
+Note another difference: the partially displayed points at the upper edge of the plot.  These don't appear when we use xlim/ylim or scale functions because those points are completely removed, instead of just zooming in on the relevant plot region.
 
 ## EXERCISE
 
-Add suitable axis labels and titles to `penguin_plot`.
+Plot age vs. basal heart rate (bhr).  Change the axis limits to exclude the outlier.  Use any method above.
 
 ```{r}
 
 ```
 
-## Change the Color and Size of Points
 
-### Set a static color or size
+# Changing Color and Size of Data Representations
+
+## Set a static color or size
 
 We can change the aesthetics of a geom layer by modifying the respective geoms. Let's change the color of the points and the line to a static value.
 
 ```{r}
-ggplot(midwest, aes(x=area, y=poptotal)) +
-  geom_point(col="plum3") +
-  geom_smooth(method="lm", col="aquamarine3") +
-  coord_cartesian(xlim=c(0, 0.1), ylim=c(0, 1000000)) + 
-  labs(title="Area Vs Population", 
-       subtitle="From midwest dataset", 
-       y="Population", 
-       x="Area", 
-       caption="Midwest Demographics")
+ggplot(stress, aes(x=basebp, y=mbp)) + 
+  geom_point(col = "red") 
+
 ```
 
-Let's try new colors and also change the size of the points:
+Size:
 
 ```{r}
-ggplot(midwest, aes(x=area, y=poptotal)) + 
-  geom_point(col="steelblue", size=3) +   # Set static color and size for points
-  geom_smooth(method="lm", col="firebrick") +  # change the color of line
-  coord_cartesian(xlim=c(0, 0.1), ylim=c(0, 1000000)) + 
-  labs(title="Area Vs Population", 
-       subtitle="From midwest dataset", 
-       y="Population", 
-       x="Area", 
-       caption="Midwest Demographics")
+ggplot(stress, aes(x=basebp, y=mbp)) + 
+  geom_point(size=3) 
 ```
+
+Transparency:
+
+```{r}
+ggplot(stress, aes(x=basebp, y=mbp)) + 
+  geom_point(size=3, col="red", alpha=.3) 
+```
+
+Some plots have both a color (outline, or the whole thing) and a fill:
+
+```{r}
+ggplot(stress, aes(age)) + 
+  geom_histogram(col="red", fill="blue")
+```
+
+You can set colors with built in names (like above):
+
+```{r}
+colors()
+```
+
+HEX values (like used in HTML):
+
+```{r}
+ggplot(stress, aes(age)) + 
+  geom_histogram(col="#FF3333", fill="#3333ff")
+```
+
+Or other methods, like RGB values 
 
 ## EXERCISE
 
-Change the color to red and transparency (alpha) of the points to 0.5 by setting parameters within `geom_point` for a plot of flipper_length_mm vs body_mass_g
+Change the color and size of the points in the plot below.
+
+Challenge: Change the point shape to one with both an outline and a fill and set both colors.  This site might help: https://blog.albertkuo.me/post/point-shape-options-in-ggplot/
 
 ```{r}
-
+ggplot(stress, aes(age, maxhr)) + 
+  geom_point()
 ```
 
-### Change the Color To Reflect Categories in Another Column
+## Change the Color To Reflect Data
 
-If we want the color to change based on another column in the source dataset (`midwest`), it must be specified inside the `aes()` function.
+If we want the color to change based on another column in the source dataset, it must be specified inside the `aes()` function.
 
 ```{r}
-gg <- ggplot(midwest, aes(x=area, y=poptotal)) + 
-  geom_point(aes(colour=state), size=2) +  # Vary color based on state categories.
-  geom_smooth(method="lm", col="firebrick", linewidth=2) + 
-  coord_cartesian(xlim=c(0, 0.1), ylim=c(0, 1000000)) + 
-  labs(title="Area Vs Population", 
-       subtitle="From midwest dataset", 
-       y="Population", 
-       x="Area", 
-       caption="Midwest Demographics")
-gg
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point()
 ```
 
-Now each point is colored based on the `state` it belongs to because of `aes(colour=state)`. Not just color, but `size`, `shape`, `stroke` (thickness of boundary), and `fill` (fill color) can be used to discriminate groupings.
+Now each point is colored based on the `age` of the participant. Not just color, but `size`, `shape`, `stroke` (thickness of boundary), and `fill` (fill color) can be used to discriminate groupings.
 
 As an added benefit, the legend is added automatically. If needed, it can be removed by setting the `legend.position` to `None` from within a `theme()` function. We'll talk about themes later.
 
-### Scales for color
-
-Just like you can add scales for position, you can also add [scales for color](https://ggplot2-book.org/scales-colour).
-
-The default scale for continuous fill scales is `scale_fill_continuous()` which in turn defaults to `scale_fill_gradient()`. As a consequence, these three commands produce the same plot using a gradient scale:
+This is a really convenient way to explore groups in your data.  Remember the penguins?
 
 ```{r}
-gg
+library(palmerpenguins)
 
-gg + scale_fill_continuous()
-
-gg + scale_fill_gradient()
+ggplot(penguins, aes(bill_length_mm, bill_depth_mm, color=species)) +
+  geom_point()
 ```
+
+Why the message about data being removed?  We didn't change the axes ranges...  This is because there are missing values in this dataset. 
+
+## EXERCISE
+
+Change the plot below to color by hxofHT (history of hypertension)
+
+```{r}
+ggplot(stress, aes(x=basebp, y=mbp)) + 
+  geom_point()
+```
+
+
+## Scales for color
+
+The specific color scale used is controlled with a scale function (https://ggplot2-book.org/scales-colour).
+
+The default scale for continuous color scales is `scale_color_continuous()` which in turn defaults to `scale_color_gradient()`. As a consequence, these three commands produce the same plot using a gradient scale:
+
+```{r}
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point()
+
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() + 
+  scale_color_continuous()
+
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() + 
+  scale_color_gradient()
+```
+
+If we set the color by a discrete variable, we'd use a discrete scale:
+
+```{r}
+ggplot(stress, aes(x=basebp, y=mbp, color=hxofHT)) + 
+  geom_point()
+
+ggplot(stress, aes(x=basebp, y=mbp, color=hxofHT)) + 
+  geom_point() + 
+  scale_color_discrete()
+```
+
 
 You can change the color palette entirely using a different color scale:
 
 ```{r}
-gg + scale_colour_brewer(palette = "Set1")  # change color palette
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() + 
+  scale_colour_gradient(low="green",
+                        high="forestgreen")
+                        
+
+ggplot(stress, aes(x=basebp, y=mbp, color=hxofHT)) + 
+  geom_point() + 
+  scale_color_manual(values=c("red", "blue"))
 ```
 
-More of such palettes can be found in the RColorBrewer package
-
-```{r}
-library(RColorBrewer)
-
-head(brewer.pal.info, 10)  # show 10 palettes
-
-gg + scale_colour_brewer(palette = "PuOr")
-```
+There are many ways to control the color scales.  For some examples, see: https://ggplot2-book.org/scales-colour for the basics, or many online tutorials for other options.  The [`{ggsci}`](https://cran.r-project.org/web/packages/ggsci/vignettes/ggsci.html) package offers a collection of high-quality color palettes inspired by colors used in scientific journals, data visualization libraries, science fiction movies, and TV shows. 
 
 When selecting colors for your visualizations, in addition to other factors, it's important to consider [friendly colors for people with color vision deficiency](https://www.tableau.com/blog/examining-data-viz-rules-dont-use-red-green-together).
 
 ## EXERCISE
 
-Change the color of the points according to the species column for a plot of flipper_length_mm vs body_mass_g
+Make a scatterplot of heart rate vs. blood pressure, with the points colored by gender.  
+
+Note: you'll need to make the gender variable a factor first, like we did with hxofHT above.  Why?  Because otherwise it will treat it as a continuous variable instead of a discrete one, and use the wrong type of color scale.
 
 ```{r}
 
 ```
 
+
+
+# Change the Title and Axis Labels
+
+Let's work on adding and changing labels.  There are a few options
+
+```{r}
+ggplot(stress, aes(x=basebp, y=mbp)) + 
+  geom_point() 
+
+# labs() function
+ggplot(stress, aes(x=basebp, y=mbp)) + 
+  geom_point() + 
+  labs(title = "Blood Pressure",
+       subtitle = "From Stress Echocardiograms",
+       caption = "Data from UCLA",
+       x = "Base Reading",
+       y = "Max Reading") 
+
+# or, with scales functions
+ggplot(stress, aes(x=basebp, y=mbp)) + 
+  geom_point() + 
+  labs(title = "Blood Pressure",
+       subtitle = "From Stress Echocardiograms",
+       caption = "Data from UCLA") + 
+  scale_x_continuous(name="Base Reading") + 
+  scale_y_continuous(name="Max Reading")
+```
+
+If we have a caption, we also control that label with a scale function:
+
+```{r}
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() + 
+  labs(title = "Blood Pressure",
+       subtitle = "From Stress Echocardiograms",
+       caption = "Data from UCLA") + 
+  scale_x_continuous(name="Base Reading") + 
+  scale_y_continuous(name="Max Reading")
+
+
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() + 
+  labs(title = "Blood Pressure",
+       subtitle = "From Stress Echocardiograms",
+       caption = "Data from UCLA") + 
+  scale_x_continuous(name="Base Reading") + 
+  scale_y_continuous(name="Max Reading") +
+  scale_color_continuous(name="Age")
+```
+
+
+
+## EXERCISE
+
+Add suitable axis labels and titles to the plot below.  baseEF = baseline cardiac ejection fraction (a measure of the heart's pumping efficiency).
+
+Also experiment with the number of bins for the histogram.  Use the bins parameter for geom_histogram, or experiment with the binwidth and center parameters.
+
+```{r}
+ggplot(stress, aes(baseEF)) + 
+  geom_histogram() 
+  
+```
+
+
 # Themes
 
-Let's make the graph more elegant! Let's use themes to clean up the background.
+We set colors and sizes for the data, but what about the background? Use themes to control the background.
+
+There are some built-in themes in R, and we can also manually control all of the elements.
+
+```{r}
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() + 
+  labs(title = "Blood Pressure",
+       subtitle = "From Stress Echocardiograms",
+       caption = "Data from UCLA") + 
+  scale_x_continuous(name="Base Reading") + 
+  scale_y_continuous(name="Max Reading") + 
+  theme_bw() # a built-in theme
+
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() + 
+  labs(title = "Blood Pressure",
+       subtitle = "From Stress Echocardiograms",
+       caption = "Data from UCLA") + 
+  scale_x_continuous(name="Base Reading") + 
+  scale_y_continuous(name="Max Reading") + 
+  theme_minimal() # a built-in theme
+
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() + 
+  labs(title = "Blood Pressure",
+       subtitle = "From Stress Echocardiograms",
+       caption = "Data from UCLA") + 
+  scale_x_continuous(name="Base Reading") + 
+  scale_y_continuous(name="Max Reading") + 
+  theme(panel.grid = element_blank()) # controlling specific elements
+
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() + 
+  labs(title = "Blood Pressure",
+       subtitle = "From Stress Echocardiograms",
+       caption = "Data from UCLA") + 
+  scale_x_continuous(name="Base Reading") + 
+  scale_y_continuous(name="Max Reading") + 
+  theme_bw() + # start with a built-in theme, but then still modify
+  theme(panel.grid = element_blank()) # controlling specific elements
+```
+
 
 `theme_pubr()` from the `{ggpubr}` package is a nice option:
 
@@ -428,43 +556,41 @@ Let's make the graph more elegant! Let's use themes to clean up the background.
 #install.packages("ggpubr")
 library(ggpubr)
 
-ggplot(data=penguins, 
-       aes(x = flipper_length_mm, 
-           y = body_mass_g)) +
-  geom_point(aes(color = species)) +
-  geom_smooth(method="lm", aes(color = species)) + 
-  labs(x = "Flipper length (mm)", 
-       y = "Body mass (g)", 
-       title = "Penguins Data") +
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() + 
+  labs(title = "Blood Pressure",
+       subtitle = "From Stress Echocardiograms",
+       caption = "Data from UCLA") + 
+  scale_x_continuous(name="Base Reading") + 
+  scale_y_continuous(name="Max Reading") +
+  scale_color_continuous(name="Age") +
   theme_pubr()
 ```
 
 Themes can be [customized](https://rpubs.com/mclaire19/ggplot2-custom-themes) to every detail - the [possibilities](https://ggplot2.tidyverse.org/reference/theme.html) are endless!
 
-The [`{ggsci}`](https://cran.r-project.org/web/packages/ggsci/vignettes/ggsci.html) package offers a collection of high-quality color palettes inspired by colors used in scientific journals, data visualization libraries, science fiction movies, and TV shows. But there are several built-in themes in ggplot that you can use:
+The most common thing to change with themes is probably the background grid lines.  There are major and minor grid lines on both axes.  
 
 ```{r}
-ggplot(data=penguins, 
-       aes(x = flipper_length_mm, 
-           y = body_mass_g, 
-           color = species)) +
-  geom_point() +
-  geom_smooth(method="lm") +
-  labs(x = "Flipper length (mm)", 
-       y = "Body mass (g)", 
-       title = "Penguins Data") +
-  theme_classic()
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() + 
+  theme_bw()
+
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() + 
+  theme_bw() + 
+  theme(panel.grid.minor = element_blank(), # element_blank() removes an element
+        panel.grid.major.x = element_line(color="blue")) # element_line controls their appearance
 ```
+
+
 
 ## Fonts
 
-Themes are extremely versatile. For example, you change the axis font styles using custom inputs:
+Themes are extremely versatile. For example, you change the axis font styles using custom inputs.  element_text() function controls test, like element_line() controls line options.
 
 ```{r}
-ggplot(data=penguins, 
-       aes(x = flipper_length_mm, 
-           y = body_mass_g, 
-           color = species)) +
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
   geom_point() + 
   theme_classic() +
   theme(axis.title.x = element_text(color="dodgerblue", 
@@ -478,10 +604,7 @@ Notice how the theme custom input overrides the defaults set in `theme_classic()
 Remember that the order of layering matters! The last passed input will be retained.
 
 ```{r}
-ggplot(data=penguins, 
-       aes(x = flipper_length_mm, 
-           y = body_mass_g, 
-           color = species)) +
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
   geom_point() +
   theme(axis.title.x = element_text(color="dodgerblue", 
                                     size=15, 
@@ -492,67 +615,35 @@ ggplot(data=penguins,
 
 ## EXERCISE
 
-Add a theme of your choosing from [here](https://r-charts.com/ggplot2/themes/) to `penguin_plot`.
-
-Reminder: if you are using a new package, first install and load that package to access the themes inside it.
+We don't want vertical grid lines on bar plots.  Remove them from the plot below, as well as removing the gray background.  
 
 ```{r, eval=FALSE}
-penguin_plot <- ggplot(data = penguins, 
-                       aes(x = flipper_length_mm, 
-                           y = body_mass_g)) +
-  geom_point(aes(color=species)) 
+ggplot(stress, aes(gender, fill=gender)) +
+  geom_bar()
 
-penguin_plot + _________
 ```
 
 # Separating by Facets
 
-The graph above still looks quite messy. Maybe we want to separate out the three species into individual panels:
+We saw one way to examine groups in our data: by coloring data by a grouping variable.  Another option is to make the same plot multiple times, once for each group.  ggplot2 has a way to do this easily.
 
 ```{r}
-ggplot(data=penguins, 
-       aes(x = flipper_length_mm, 
-           y = body_mass_g)) +
-  geom_point(aes(color = species), 
-             size = 2, 
-             alpha = 0.8) +
-  geom_smooth(method="lm", 
-              aes(color=species, 
-                  fill=species), 
-              alpha=0.1) + 
-  theme_classic() +
-  
-  facet_grid(~species) + # facet by species -- note the use of a formula!!
-  labs(x = "Flipper length (mm)",
-       y = "Body mass (g)", 
-       title = "Penguins Data")
-   
+ggplot(stress, aes(x=basebp, y=mbp)) + 
+  geom_point() 
+
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() +
+  facet_grid(hxofHT ~ .) # uses formula syntax
+
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() +
+  facet_grid( ~ hxofHT)  
 ```
 
-You can separate by more than one column. Note also the difference between "color" and "fill" in the example below:
-
-```{r}
-ggplot(data=penguins, 
-       aes(x = flipper_length_mm, 
-           y = body_mass_g, 
-           group = species)) +
-  geom_point(aes(color = species), 
-             size = 2, 
-             alpha = 0.8) +
-  geom_smooth(method="lm", 
-              aes(color=species),
-              fill="black",
-              alpha=0.15) + 
-  facet_grid(~species + island) +
-  labs(x = "Flipper length (mm)", 
-       y = "Body mass (g)", 
-       title = "Penguins Data") +
-  theme_classic() 
-```
 
 ## EXERCISE
 
-Separate the plot above into facets by sex. Make sure to remove observations that have no sex specified.
+Make any plot from the stress data - facet the plot by gender.  
 
 ```{r}
 
@@ -563,59 +654,110 @@ Separate the plot above into facets by sex. Make sure to remove observations tha
 Suppose you created a bunch of plots and now you want to save them, you can use the [`ggsave()`](https://ggplot2.tidyverse.org/reference/ggsave.html) function:
 
 ```{r}
-# save the plot object as a variable
-p <-
-  ggplot(data = penguins, 
-         aes(x = flipper_length_mm, 
-             y = body_mass_g,
-             group = species)) +
-  geom_point(aes(color = species), 
-             size = 2, 
-             alpha = 0.8) +
-  geom_smooth(method = "lm",
-              aes(color = species, fill = species),
-              alpha = 0.1) +
-  facet_grid( ~ species) + # facet by species -- note the use of a formula!!
-  labs(x = "Flipper length (mm)", 
-       y = "Body mass (g)", 
-       title = "Penguins Data") +
-  theme_classic()
+ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() +
+  facet_grid(hxofHT ~ .) 
 
-ggsave("my_beautiful_plot.pdf", plot=p, height = 4, width = 6, device="pdf", useDingbats=F) # setting useDingbats to FALSE lets you edit plot fonts in Illustrator
+ggsave("my_beautiful_plot.pdf", 
+       height = 4, # height and width in inches
+       width = 6) # by default, saves the last plot you made
+
+# Or, explicitly save the plot in a variable to avoid confusion
+bp_plot <- ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
+  geom_point() +
+  facet_grid(hxofHT ~ .) 
+
+bp_plot # to show it
+
+ggsave("my_beautiful_plot.pdf", 
+       plot=bp_plot, 
+       height = 4, 
+       width = 6)
 ```
 
-![](https://miro.medium.com/v2/resize:fit:2000/format:webp/1*mcLnnVdHNg-ikDbHJfHDNA.png){width="665"}
 
-# Bonus 2: Arranging multiple plots
+# Bonus 2: Controlling the order and labels of categories
 
-If you are preparing several different plots for publication, perhaps you want to arrange them in a grid before exporting and saving them.
+When making a bar plot or other plot with a discrete variable, you control the order in which the categories appear by the order of the levels of the factor variable you're using.  Even if you haven't explicitly made a variable a factor, it will be automatically converted during the process of making a plot.  So you can control the categories by explicitly making the factor the way you want.  
 
-Let's create another plot first:
+The forcats package has useful helper functions.
 
 ```{r}
-# We already have a plot p
-p
+# making up a new category
+set.seed(3243)
+stress$location <- sample(c("Ohio", "Illinois", "Georgia", "New York"), nrow(stress), replace=TRUE)
 
-# create a new plot to display the sample size for each species
-p_count <- ggplot(penguins, aes(species)) + 
-  geom_bar(aes(fill=species)) + # this is coloring the bars by species
-  theme_classic() +
-  scale_color_brewer(palette = "Accent") +
-  labs(title="Count of penguin species")
+table(stress$location)
 
-p_count
+stress %>%
+  group_by(location) %>%
+  summarize(mean_bp = mean(basebp))
+
+stress %>%
+  group_by(location) %>%
+  summarize(mean_bp = mean(basebp)) %>%
+  ggplot(aes(x=location, y=mean_bp)) + # we're piping the data frame in to ggplot, so don't specify it
+  geom_bar(stat="identity")  # we know the bar heights, don't calculate them
 ```
 
-Now let's put the plots together using the packages `{grid}` and `{gridExtra}`:
+By default, the bars are in alphabetical order (specific to the "locale" of our computer).
+
+Put the bars in order of their value:
 
 ```{r}
-# arrange plot p and plot_new
-library(gridExtra)
-library(grid)
-
-grid.arrange(p_count, p, ncol=2)
-
-grid.arrange(p_count, p, nrow=2)
+stress %>%
+  group_by(location) %>%
+  summarize(mean_bp = mean(basebp)) %>%
+  mutate(location = forcats::fct_reorder(location, mean_bp)) %>%
+  ggplot(aes(x=location, y=mean_bp)) +
+  geom_bar(stat="identity")  
 ```
 
-You can create very [complicated layouts](https://cran.r-project.org/web/packages/gridExtra/vignettes/arrangeGrob.html) if needed. You can also use the `{patchwork}` package to same effect.
+Reverse:
+
+```{r}
+stress %>%
+  group_by(location) %>%
+  summarize(mean_bp = mean(basebp)) %>%
+  mutate(location = forcats::fct_reorder(location, mean_bp),
+         location = forcats::fct_rev(location)) %>%
+  ggplot(aes(x=location, y=mean_bp)) +
+  geom_bar(stat="identity")  
+```
+
+
+Set the bars in a specified order:
+
+```{r}
+stress %>%
+  group_by(location) %>%
+  summarize(mean_bp = mean(basebp)) %>%
+  mutate(location = factor(location, levels=c("New York", "Illinois", "Ohio", "Georgia"))) %>%
+  ggplot(aes(x=location, y=mean_bp)) +
+  geom_bar(stat="identity")  
+```
+
+Change labels (option 1):
+
+```{r}
+stress %>%
+  group_by(location) %>%
+  summarize(mean_bp = mean(basebp)) %>%
+  mutate(location = factor(location, 
+                           levels=c("New York", "Illinois", "Ohio", "Georgia"),
+                           labels=c("NY", "IL", "OH", "GA"))) %>%
+  ggplot(aes(x=location, y=mean_bp)) +
+  geom_bar(stat="identity")  
+```
+
+Change labels (option 2):
+
+```{r}
+stress %>%
+  group_by(location) %>%
+  summarize(mean_bp = mean(basebp)) %>%
+  ggplot(aes(x=location, y=mean_bp)) +
+  geom_bar(stat="identity") +
+  scale_x_discrete(labels=c("New York"="NY", # set some or all
+                            "Illinois" = "IL"))
+```
