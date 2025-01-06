@@ -110,8 +110,14 @@ sum(cer$is_minor)
 
 # count the opposite by using ! (not)
 sum(!cer$is_minor)
-```
 
+# if there is missing:
+sum(cer$Number_of_Sexual_Partners > 3)
+sum(cer$Number_of_Sexual_Partners > 3, na.rm=TRUE)
+
+# count missing:
+sum(is.na(cer$Number_of_Sexual_Partners))
+```
 
 Let's see an example with the penguins data frame: Select rows where penguin bill length is greater than 34.
 
@@ -162,6 +168,18 @@ Select the Age_of_Respondents, Smoking_in_Years, and Smoking_in_Packs_per_Year c
 ```{r}
 
 ```
+
+## Note: Handling Missing
+
+Note that dplyr and base R handle missing values differently when selecting rows:
+
+```{r}
+penguins[penguins$bill_length_mm < 34, ]
+
+penguins %>%
+  filter(bill_length_mm < 34)
+```
+
 
 ## Chaining multiple conditions together
 
@@ -227,85 +245,7 @@ How many non-smokers were diagnosed with cancer in the cer dataset?
 
 ```
 
-## dplyr: Summarize
 
-We use `mutate()` when we want the output to have the same length as the input. In other words, we use `mutate()` when we're operating on the individual elements in a vector - we want a value for every row in the data.
-
-When we want to condense multiple values down to a single (or a few values), such as taking the mean or standard deviation of a vector, we use summarize instead:
-
-```{r}
-police %>% 
-  mutate(vehicle_age = 2017 - vehicle_year) %>% # computing a new variable first
-  summarize(mean_vehicle_age = mean(vehicle_age))
-```
-
-Note that even though there's just one value, we get a tibble returned. This is expected within the tidyverse.
-
-We can compute more than one summary measure at the same time:
-
-```{r}
-police %>% 
-  mutate(vehicle_age = 2017 - vehicle_year) %>% # computing a new variable first
-  summarize(
-    mean_vehicle_age = mean(vehicle_age),
-    sd_vehicle_age = sd(vehicle_age),
-    min_date = min(date),
-    max_date = max(date)
-    )
-```
-
-We get one column per summary variable we create. Once we group below, we'll see why we get the output in columns instead of rows.
-
-### EXERCISE
-
-Use summarize to compute the `min()` and `max()` `vehicle_year`
-
-```{r}
-
-```
-
-## Across
-
-If we want to apply the same summary functions to multiple columns in our data frame, we can write out all of the summary commands explicitly, or we can use `across()` to select which variables to summarize with which functions.
-
-Let's use the `n_distinct()` function to count the number of distinct values in each column (`n_distinct(x)` is the same as `length(unique(x))`. This will help us see which columns don't have useful information because every value is the same.
-
-`across()` selects columns using the helper functions you could give to `select()` directly. We'll use `everything()` here to select all columns.
-
-```{r}
-cer %>%
-  summarize(across(everything(), n_distinct))
-```
-
-If you wanted to select columns using their names, put them in a vector (so it's a single input argument):
-
-```{r}
-cer %>%
-  summarize(across(c(Age_of_Respondents, Number_of_Sexual_Partners, Number_of_Pregnancies), 
-                   n_distinct))
-```
-
-If we want to apply multiple functions:
-
-```{r}
-cer %>%
-  na.omit() %>% 
-  summarize(across(where(is.numeric), ## select columns that are not of type character
-                   list(min, max))) %>% # take the min and max of each column
-  View()
-```
-
-To fix the names in the output, explicitly name our summary functions in the list:
-
-```{r}
-cer %>%
-  na.omit() %>%
-  summarize(across(!where(is.character), ## select columns that are not of type character
-                   list(min_val=min, max_val=max))) %>% # take the min and max of each column
-  View()
-```
-
-There are other options for output naming patterns available too.
 
 ## dplyr: Group_by
 
@@ -380,7 +320,7 @@ Usually this would come up after more complicated operations, and often after co
 
 ### EXERCISE
 
-Compute the `min()` and `max()` `Age_of_Respondents` for each count of `Number_of_Pregnancies`.
+Compute the `min()` and `max()` `Age_of_Respondents` for each value of `Number_of_Pregnancies`.
 
 ```{r}
 
@@ -407,6 +347,8 @@ cer %>%
   ungroup()
 ```
 
+There are some useful slice functions to choose the row with the min (slice_min) or max (slice_max) value of some variable, or to choose random rows (slice_sample).  But we use slice functions fairly rarely.
+
 ## Simpson's Paradox
 
 Why is grouping so important?  Because if we don't properly account for meaningful groups in our data, we can reach the wrong conclusions.  
@@ -415,7 +357,8 @@ Let's look at the penguins data.  What's the correlation between bill length and
 
 
 ```{r}
-cor(penguins$bill_depth_mm, penguins$bill_length_mm, use="pairwise.complete")
+cor(penguins$bill_depth_mm, penguins$bill_length_mm, 
+    use="pairwise.complete") # we'll cover correlation again next week
 ```
 
 Hmm...that's weird.  Let's take a look:
@@ -440,7 +383,6 @@ ggplot(penguins, aes(bill_length_mm, bill_depth_mm, color=species)) +
 ```
 
 Look at the groups in your data!  
-
 
 
 ## Arrange
@@ -473,6 +415,77 @@ cer %>%
   arrange(-Age_of_Respondents, Number_of_Sexual_Partners) %>% 
   View()
 ```
+
+## Summarize: Across
+
+If we want to apply the same summary functions to multiple columns in our data frame, we can write out all of the summary commands explicitly, or we can use `across()` to select which variables to summarize with which functions.
+
+Let's use the `n_distinct()` function to count the number of distinct values in each column (`n_distinct(x)` is the same as `length(unique(x))`. This will help us see which columns don't have useful information because every value is the same.
+
+`across()` selects columns using the helper functions you could give to `select()` directly. We'll use `everything()` here to select all columns.
+
+```{r}
+cer %>%
+  summarize(across(everything(), n_distinct))
+```
+
+If you wanted to select columns using their names, put them in a vector (so it's a single input argument):
+
+```{r}
+cer %>%
+  summarize(across(c(Age_of_Respondents, Number_of_Sexual_Partners, Number_of_Pregnancies), 
+                   n_distinct))
+```
+
+If we want to apply multiple functions:
+
+```{r}
+cer %>%
+  na.omit() %>% 
+  summarize(across(where(is.numeric), ## select columns that are of type numeric
+                   list(min, max))) %>% # take the min and max of each column
+  View()
+```
+
+To fix the names in the output, explicitly name our summary functions in the list:
+
+```{r}
+cer %>%
+  na.omit() %>%
+  summarize(across(!where(is.character), ## select columns that are not of type character
+                   list(min_val=min, max_val=max))) %>% # take the min and max of each column
+  View()
+```
+
+There are other options for output naming patterns available too.
+
+### Anonymous Functions
+
+If you need to specify additional options to a function you want to use with across, then the syntax gets a bit more complicated:
+
+```{r}
+cer %>%
+  summarize(across(where(is.numeric),
+                   mean))
+
+cer %>%
+  summarize(across(where(is.numeric),
+                   \(x) mean(x, na.rm = TRUE)))
+
+# or
+cer %>%
+  summarize(across(where(is.numeric),
+                   ~mean(.x, na.rm = TRUE)))
+```
+
+Or if you need to apply multiple functions, such as when counting missing values:
+
+```{r}
+cer %>%
+  summarize(across(everything(), 
+                   \(x) sum(is.na(x))))
+```
+
 
 ## Count
 
@@ -507,4 +520,39 @@ cer %>%
   count(Is_Smoking, Number_of_STD_Diagnosis)
 ```
 
-## Tabyl (janitor)
+If you want to include the count of rows with other variables in summarize, you can use n() instead:
+
+```{r}
+cer %>%
+  group_by(Number_of_STD_Diagnosis) %>%
+  summarize(count = n(),
+            avg_age = mean(Age_of_Respondents))
+```
+
+n() is also useful when you want to compute proportions:
+
+```{r}
+cer %>%
+  summarize(count_under_18 = sum(Age_of_Respondents < 18),
+            prop_under_18 = count_under_18/n())
+```
+
+Note that you can use values you defined earlier in the call.
+
+If you want proportion of the whole dataset with groups:
+
+```{r}
+cer %>%
+  group_by(Is_Smoking) %>%
+  summarize(count_under_18 = sum(Age_of_Respondents < 18),
+            total = n(),
+            prop_under_18 = count_under_18/n()) ## group proportions
+
+cer %>%
+  group_by(Is_Smoking) %>%
+  summarize(count_under_18 = sum(Age_of_Respondents < 18),
+            prop_under_18 = count_under_18/n(),
+            group_total = n(),
+            group_prop = n()/nrow(cer))
+```
+

@@ -68,7 +68,7 @@ sd(diabetes$age)
 
 ## Exercise 
 
-Plot a histogram of the age variable.  Plot a histogram of A1C (glyhb)
+Plot a histogram of the age variable.  Plot a histogram of A1C (glyhb).  The function for a histogram is hist().
 
 ```{r}
 hist(diabetes$age)
@@ -157,8 +157,12 @@ What is the tallest height in the data?  What about the shortest?
 ```{r}
 max(diabetes$height, na.rm=TRUE)
 min(diabetes$height, na.rm=TRUE)
-```
 
+# or 
+diabetes %>%
+  summarize(max(height, na.rm=TRUE),
+            min(height, na.rm=TRUE))
+```
 
 
 
@@ -218,6 +222,17 @@ count(diabetes, frame)
 
 # or 
 tabyl(diabetes, frame)
+```
+
+
+## Exercise
+
+What is the proportion of participants with each frame size?
+
+```{r}
+diabetes %>%
+  group_by(frame) %>%
+  summarize(prop = n()/nrow(diabetes))
 ```
 
 
@@ -300,13 +315,13 @@ diabetes %>%
 # challenge:
 diabetes %>%
   group_by(location) %>%
-  summarize(across(c(chol, hdl, bp.1s, bp.1d), \(x)mean(x, na.rm=TRUE)))
+  summarize(across(c(chol, hdl, bp.1s, bp.1d), \(x) mean(x, na.rm=TRUE)))
 
 # challenge:
 diabetes %>%
   group_by(location) %>%
   select(chol, hdl, bp.1s, bp.1d) %>%
-  summarize(across(everything(), \(x)mean(x, na.rm=TRUE)))
+  summarize(across(everything(), \(x) mean(x, na.rm=TRUE)))
 
 
 ```
@@ -330,7 +345,8 @@ How many participants have the maximum height value in the data?
 
 ```{r}
 diabetes %>%
-  filter(height == max(height, na.rm=TRUE))
+  filter(height == max(height, na.rm=TRUE)) %>%
+  nrow()
 ```
 
 

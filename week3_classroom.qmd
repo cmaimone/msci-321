@@ -49,7 +49,7 @@ R comes with lots of built-in basic functions (commands). But we almost always n
 ### Installing a package
 
 -   RStudio often prompts you to install packages you're missing: if you open a file that uses a package that you don't have installed
--   Do NOT put installation commands in R scripts or R Markdown files (included below only because we're teaching)
+-   Do NOT put installation commands in R scripts or R Markdown/Quarto files (included below only because we're teaching)
 
 ```{r, installpackages, eval=FALSE}
 # install a single package
@@ -481,13 +481,13 @@ month_info$days
 Use names in `[]`: put them in quotes
 
 ```{r}
-month_info[ ,"days"]
+month_info[ , "days"]
 ```
 
 With penguins (tibble), it stays as a tibble:
 
 ```{r}
-penguins[ ,"bill_length_mm"]
+penguins[ , "bill_length_mm"]
 ```
 
 Multiple columns by name, need to use a vector of names:
@@ -503,7 +503,7 @@ month_info[ 2:4 , c("days", "month")]
 
 ### Tidy Data
 
-Tidy data is a consistent way to organise your data. Once you have tidy data and the tidy tools provided by packages in the tidyverse, you will spend much less time munging data from one representation to another, allowing you to spend more time on the analytic questions at hand.
+Tidy data is a consistent way to organize your data. Once you have tidy data and the tidy tools provided by packages in the tidyverse, you will spend much less time munging data from one representation to another, allowing you to spend more time on the analytic questions at hand.
 
 There are 3 inter-related rules which make a dataset tidy:
 
@@ -536,17 +536,11 @@ Tidyverse packages do a few things:
 Tidyverse packages are particularly useful for:
 
 -   data exploration
-
 -   reshaping data sets
-
 -   computing summary measures over groups
-
 -   cleaning up different types of data
-
 -   reading and writing data
-
 -   predictive modeling
-
 -   reporting results
 
 ### EXERCISE
@@ -565,6 +559,7 @@ classroom
 
 ```
 
+
 ## dplyr
 
 dplyr is the core package of the tidyverse. It includes functions for working with tibbles (or any data frames). While you can still use base R operations on tibbles/data frames, such as using `$` and `[]` subsetting like we did above, dplyr provides alternatives to all of the common data manipulation tasks.
@@ -577,7 +572,7 @@ Before we start, let's remember what columns are in our data:
 names(cer)
 ```
 
-## Select: choose columns
+### Select: choose columns
 
 The `select()` function lets us choose which columns (or variables) we want to keep in our data.
 
@@ -608,65 +603,45 @@ select(cer, 1, 4, 10)
 To exclude columns:
 
 ```{r}
-cer %>% 
-  select(-Age_of_Respondents) %>% 
-  names()
+select(cer, -Age_of_Respondents)
+
+names(select(cer, -Age_of_Respondents))
 ```
 
 Finally, select can also be used to reorder columns, such as:
 
 ```{r}
-cer %>% 
-  select(Is_Diagnosed_with_STDs, everything()) %>% 
-  names()
+select(cer, Is_Diagnosed_with_STDs, everything())
+
+names(select(cer, Is_Diagnosed_with_STDs, everything()))
 ```
+
+`everything()` is a helper function that lets us choose column with names that meet different criteria.  `everything()` gets all columns.  There are others.  For example:
+
+```{r}
+select(cer, starts_with("Is_"))
+
+names(select(cer, starts_with("Is_")))
+```
+
 
 ### EXERCISE
 
 Convert this base R expression: `cer[ ,c("Is_Smoking", "Smoking_in_Years", "Smoking_in_Packs_per_Year")]` to use `select()` instead to do the same thing.
 
-Hint: The base R expression above keeps all rows but selects only the three columns named within `c()`.
 
 ```{r}
 
 ```
 
-## Mutate: add/modify columns
 
-`mutate()` is used to both change the values of an existing column and make a new column.
+### Pipe Operator
 
-We name the column we're mutating and set the value. If the name already exists, it will update the column. If the name doesn't exist, it will create a new variable (column is appended at the end of the existing columns).
-
-```{r, eval=TRUE}
-cer %>% 
-  mutate(is_minor = Age_of_Respondents < 18) %>% 
-  names() # look at column names
-```
-
-We can put multiple mutations in the same call to mutate, with the expressions separated by commas:
-
-```{r,  eval=TRUE}
-cer %>% 
-  mutate(is_minor = Age_of_Respondents < 18,
-         is_senior = Age_of_Respondents > 65) %>% 
-  names()
-```
-
-### EXERCISE
-
-Convert the column Is_Smoking to a logical data-type
-
-Hint: Use `as.logical` for type-conversion.
-
-```{r}
-
-```
-
-## Pipe: Chaining Commands Together
-
-So, we can choose rows and choose columns separately; how do we combine these operations? `dplyr`, and other tidyverse commands, can be strung together in a series with a `%>%` (say/read: pipe) operator. (If you are familiar with working in a terminal/at the command line, it works like a bash pipe character `|`.) It takes the output of the command on the left and makes that the first input to the command on the right.
+Before we learn other dplyr commands, we need to learn a new operator - the pipe.  `dplyr`, and other tidyverse commands, can be strung together in a series with a `%>%` (say/read: pipe) operator. (If you are familiar with working in a terminal/at the command line, it works like a bash pipe character `|`.) It takes the output of the command on the left and makes that the first input to the command on the right.
 
 The pipe works well with dplyr (and other tidyverse packages) because the functions almost all take a data frame as the first input, and they return a data frame as the output.
+
+But it can be used with other functions as well.  
 
 We can rewrite
 
@@ -687,7 +662,159 @@ cer %>%
   select(Age_of_Respondents, Number_of_Sexual_Partners)
 ```
 
-The pipe comes from a package called `magrittr`, which has additional special operators in it that you can use. The keyboard shortcut for `%>%` is command-shift-M (Mac) or control-shift-M (Windows).
+We can also pipe to non-tidyverse functions as well:
+
+```{r}
+cer %>%
+  select(-Age_of_Respondents) %>%
+  names()
+```
+
+```{r, eval=FALSE}
+cer %>%
+  select(Age_of_Respondents, Number_of_Sexual_Partners) %>%
+  View()
+```
+
+Or have nothing to do with tidyverse functions:
+
+```{r}
+# mean(is.na(cer$Number_of_Years_with_STDs))
+is.na(cer$Number_of_Years_with_STDs) %>% mean()
+
+# or
+cer$Number_of_Years_with_STDs %>% is.na() %>% mean()
+```
+
+
+The pipe comes from a package called `magrittr`, which has additional special operators in it that you can use. The keyboard shortcut for `%>%` is command-shift-M (Mac) or control-shift-M (Windows).  The `%>%` operator is available when you load tidyverse.
+
+There is also (now) a built-in pipe operator in R: `|>`.  There are some small nuances between the two pipe operators, but for most purposes, they work the same way.  
+
+```{r}
+cer |> 
+  select(Age_of_Respondents, Number_of_Sexual_Partners) |>
+  View()
+```
+
+
+### Mutate: add/modify columns
+
+`mutate()` is used to both change the values of an existing column and make a new column.
+
+We name the column we're mutating and set the value. If the name already exists, it will update the column. If the name doesn't exist, it will create a new variable (column is appended at the end of the existing columns).
+
+```{r, eval=TRUE}
+cer %>% 
+  mutate(is_minor = Age_of_Respondents < 18) %>% 
+  names() # look at column names
+```
+
+We can put multiple mutations in the same call to mutate, with the expressions separated by commas:
+
+```{r,  eval=TRUE}
+cer %>% 
+  mutate(is_minor = Age_of_Respondents < 18,
+         is_senior = Age_of_Respondents > 65) %>% 
+  names()
+```
+
+And we can use functions as needed:
+
+```{r}
+cer %>%
+  mutate(is_minor = Age_of_Respondents < 18,
+         is_minor = factor(is_minor, levels=c(TRUE, FALSE), 
+                           labels=c("minor", "adult"))) %>%
+  select(is_minor)
+```
+
+Note above that we refered to the is_minor variable we just created again within the same call to mutate().
+
+### EXERCISE
+
+Convert the column Is_Smoking to a logical data-type
+
+Hint: Use `as.logical` for type-conversion.
+
+```{r}
+
+```
+
+### Mutate: save the output
+
+The above commands didn't actually change the cer data frame:
+
+```{r}
+names(cer)
+```
+
+If we want to save the changes, we need to assign the output of the function back to the data frame: 
+
+```{r}
+cer <- cer %>% 
+  mutate(is_minor = Age_of_Respondents < 18,
+         is_senior = Age_of_Respondents > 65)
+```
+
+Note that the output of the mutate() command is the entire data frame, so we're saving back the entire data frame, not a single column.
+
+### Summarize
+
+We can use functions as part of mutate if we want to transform a column, but how do we use functions like mean() that return a single value, instead of one value for each row?
+
+That's what summarize is for:
+
+```{r}
+cer %>%
+  summarize(mean(Age_of_Respondents))
+```
+
+We can rename the output:
+
+```{r}
+cer %>%
+  summarize(avg_age = mean(Age_of_Respondents))
+```
+
+And compute more than one thing at once:
+
+```{r}
+cer %>%
+  summarize(avg_age = mean(Age_of_Respondents),
+            avg_partners = mean(Number_of_Sexual_Partners))
+```
+
+There's that NA again:
+
+```{r}
+cer %>%
+  summarize(avg_age = mean(Age_of_Respondents),
+            avg_partners = mean(Number_of_Sexual_Partners, na.rm=TRUE))
+```
+
+We can use any combination of variables and functions within the same summarize function call:
+
+```{r}
+cer %>%
+  summarize(min_age = min(Age_of_Respondents, na.rm=TRUE), 
+            max_age = max(Age_of_Respondents, na.rm=TRUE),
+            avg_age = mean(Age_of_Respondents),
+            avg_partners = mean(Number_of_Sexual_Partners, na.rm=TRUE))
+```
+
+
+### EXERCISE
+
+What is the average number of years smoking?
+
+```{r}
+
+```
+
+
+
+## Chaining Commands Together
 
 We can use the pipe to string together multiple commands operating on the same data frame:
 
@@ -714,22 +841,11 @@ We'd have to reverse the order:
 ```{r}
 cer %>%
   mutate(is_minor = Age_of_Respondents < 18) %>% 
-  select(Age_of_Respondents, Smoking_in_Packs_per_Year)
+  select(Is_Smoking, Smoking_in_Packs_per_Year)
 ```
 
-You can use the pipe operator to string together commands outside of the tidyverse as well, and it works with any input and output, not just data frames:
 
-```{r}
-# mean(is.na(cer$Number_of_Years_with_STDs))
-is.na(cer$Number_of_Years_with_STDs) %>% mean()
-
-# or
-cer$Number_of_Years_with_STDs %>% is.na() %>% mean()
-```
-
-Note that so far, we haven't actually changed the `cer` data frame at all. We've written expressions to give us output, but we haven't saved it.
-
-Sometimes we may still want to save the result of some expression, such as after performing a bunch of data cleaning steps. We can assign the output of piped commands as we would with any other expression:
+Reminder: Sometimes we may still want to save the result of some expression, such as after performing a bunch of data cleaning steps. We can assign the output of piped commands as we would with any other expression:
 
 ```{r}
 cer_subset <- cer %>%
