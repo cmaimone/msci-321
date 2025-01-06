@@ -268,3 +268,47 @@ plot(diabetes$bmi, diabetes$waist_hip)
 ```
 
 
+## Exercise
+
+Use ifelse() to make a new variable bmi_cat that codes "<= 30" and "30+" categories.  Make a table of the new variable - make bmi_cat a factor so the categories are in an appropriate order.
+
+Challenge: Make the BMI category variable with 3 categories by nesting calls to the ifelse function.  
+
+```{r}
+diabetes <- diabetes %>% 
+  mutate(bmi_cat = ifelse(bmi <= 30, "<= 30", "30+"),
+         bmi_cat = factor(bmi_cat, levels=c("<= 30", "30+")))
+
+diabetes %>%
+  count(bmi_cat)
+
+diabetes <- diabetes %>% 
+  mutate(bmi_cat2 = ifelse(bmi <= 30, "<= 30", ifelse(bmi <= 35, "30-35", "35+")),
+         bmi_cat2 = factor(bmi_cat2, levels=c("<= 30", "30-35", "35+")))
+
+diabetes %>%
+  count(bmi_cat2)
+```
+
+
+## Exercise
+
+How much more likely are participants with glyhb > 7 to have a stab.glu > 100 than those with glyhb <= 7?  (Compute the odds ratio)
+
+```{r}
+odds <- diabetes %>%
+  mutate(a1c_over_7 = glyhb > 7,
+         glu_over_150 = stab.glu > 100) %>%
+  filter(!is.na(a1c_over_7), !is.na(glu_over_150)) %>%
+  group_by(a1c_over_7) %>%
+  summarize(prop = sum(glu_over_150)/n())
+
+odds$prop[odds$a1c_over_7]
+odds$prop[!odds$a1c_over_7]
+
+odds$prop[odds$a1c_over_7]/odds$prop[!odds$a1c_over_7] # 4.46 times
+```
+
+
+
+

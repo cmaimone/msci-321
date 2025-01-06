@@ -14,6 +14,44 @@ library(tidyverse)
 library(palmerpenguins)
 ```
 
+This is a catch-all week to cover a few useful things we haven't covered explicitly so far.
+
+# ifelse
+
+A useful function for recoding variables is ifelse().  It allows us to set the value of a varible based on some test:
+
+```{r}
+# ifelse(test, value if true, value if false)
+
+x <- 1:10
+x
+
+ifelse(x > 5, 100, 0)
+ifelse(x > 5, 100, x) # leave small values alone 
+
+x <- sample(c(1:10, NA), replace=TRUE, 30)
+x
+x <- ifelse(is.na(x), 0, x)  # replace NA values with 0
+x
+
+# without ifelse:
+x <- sample(c(1:10, NA), replace=TRUE, 30)
+x
+x[is.na(x)] <- 0
+x
+```
+
+
+## Exercise
+
+Make a new variable in the penguins data frame that labels penguins with body_mass_g > 4000 as "large" and other penguins as "small"
+
+```{r}
+
+```
+
+
+
 # Factors
 
 Factors are variables with text labels, but the set of values (called levels) that are allowed for the variable is limited, and the values optionally can have a specific order to them. Categorical data is stored in R as `factor` variables. You may ask why a special data structure is needed for categorical data, when we could just use `character` variables to represent the categories.
@@ -124,6 +162,8 @@ By checking the original values of the `NA` elements, you can see if they should
 
 When we created `smoke_factor`, one of the elements became an `NA`. `NA` was however not included as a level of the `factor`. Sometimes it is desirable to include `NA` as a level, for instance when you want to analyse rows with missing data. This is easily done using the `addNA` function:
 
+Note: we'll do this with the same smoke variable we've been using, but we typically wouldn't want to add an explicit category for missing with an ordered factor, because we don't know where in the order it should belong -- as missing, it's not included in the order, but as a category, it has to fall in the order.
+
 ```{r}
 levels(smoke_factor)
 smoke_factor <- addNA(smoke_factor)
@@ -141,21 +181,6 @@ levels(smoke_factor)
 smoke_factor
 ```
 
-Finally, if you've added more levels than what are actually used, these can be dropped using the `droplevels` function:
-
-```{r}
-smoke_factor <- factor(
-  smoke,
-  levels = c("Never","Occasionally","Regularly","Heavy","Constantly"),
-  ordered = TRUE
-  )
-
-levels(smoke_factor)
-table(smoke_factor)
-smoke_factor <- droplevels(smoke_factor)
-levels(smoke_factor)
-table(smoke_factor)
-```
 
 ### Combining levels
 
@@ -178,6 +203,7 @@ levels(smoke_factor)
 smoke_factor
 table(smoke_factor)
 ```
+
 
 ### EXERCISE
 
@@ -209,7 +235,7 @@ age_group <- c(
 
 ### EXERCISE
 
-Using the `penguiin` dataset, convert the columns `Number_of_STD_Diagnosis` into factors.
+Using the `cer` dataset, convert the columns `Number_of_STD_Diagnosis` into a factor.  Assume the missing values are 0 STDs.
 
 ```{r}
 cer <- read_csv("data/cervical_cancer_data.csv")
@@ -234,7 +260,7 @@ Using the `cer` dataset, convert the column `Number_of_Pregnancies` to a factor.
 
 ## Factor Labels
 
-Sometimes we have categorical variables that are encoded in our data with integer values -- for example, 0/1 indicator variables or answers like 1, 2, 3, 4, to a survey question.  It's helpful to change these numerical values to text labels so we don't confuse anything.  And we don't want to erronously treat these variables as numerical when they're really categorical.  We can do this with factors as well.  
+Sometimes we have categorical variables that are encoded in our data with integer values -- for example, 0/1 indicator variables or answers like 1, 2, 3, 4, to a survey question.  It's helpful to change these numerical values to text labels so we don't confuse anything.  And we don't want to erroneously treat these variables as numerical when they're really categorical.  We can do this with factors as well.  
 
 ```{r}
 my_study <- data.frame(id = c(1, 2, 3, 4, 5),
@@ -255,6 +281,8 @@ table(my_study$study_condition) # much better!
 
 
 # Missing Values
+
+We've seen missing values a few times, but let's review to make sure we covered everything:
 
 `NA` is the symbol for missing data; it can be used with any data type
 
@@ -349,6 +377,9 @@ is.na(penguins$bill_depth_mm) # missing
 !is.na(penguins$bill_depth_mm) # not missing
 penguins$bill_depth_mm[ !is.na(penguins$bill_depth_mm) ] # index with not missing
 mean(penguins$bill_depth_mm[ !is.na(penguins$bill_depth_mm) ]) # mean of not missing
+
+# same as
+mean(penguins$bill_depth_mm, na.rm=TRUE)
 ```
 
 Challenge: Select the rows from penguins where `penguins$bill_depth_mm` is missing.
@@ -396,46 +427,124 @@ They both do the same thing.
 
 
 
-## Correlation
-
-NOTE: from week 6 materials - update with missing options, change dataset
+# Correlation
 
 Calculating correlations in R can be done using the `cor()` command. The simplest way to use the command is to specify two input arguments `x` and `y`, each one corresponding to one of the variables.
 
 ```{r}
-cor(air$avail_seat_km_per_week, air$incidents_00_14)
+cor(penguins$bill_depth_mm, penguins$bill_length_mm)
 ```
-
-You can choose the correlation method from this vector `c("pearson", "kendall", "spearman")` :
-
-```{r}
-cor(air$avail_seat_km_per_week, air$incidents_00_14, method = "spearman")
-```
-
-NOTE: In all the above functions, you can handle missing values by setting `na.rm = TRUE` .
 
 However, the `cor()` function is a special case. It doesn't have an `na.rm` argument, because the story becomes a lot more complicated when more than one variable is involved. What it does have is an argument called `use` which does roughly the same thing, but you need to think little more carefully about what you want this time. Type `?cor` in the console and read through the `use` parameter options.
 
-### EXERCISE
-
-What can you say about the number of fatalities when comparing the time period 1985-1999 to the time period 2000-2014? Try a few different functions to summarize and compare these variables.
+With just two variables, if we want to exclude missing values, then "pairwise.complete.obs" and "complete.obs" will do the same thing:
 
 ```{r}
+cor(penguins$bill_depth_mm, penguins$bill_length_mm, 
+    use="pairwise.complete.obs")
+cor(penguins$bill_depth_mm, penguins$bill_length_mm, 
+    use="complete.obs")
+
+# we can abbreviate
+cor(penguins$bill_depth_mm, penguins$bill_length_mm, 
+    use="pairwise")
+cor(penguins$bill_depth_mm, penguins$bill_length_mm, 
+    use="p")
+```
+
+The difference comes when we compute a correlation matrix of multiple variables:
+
+```{r}
+cor(penguins[, 3:6])
+cor(penguins[, 3:6], use="pairwise")
+cor(penguins[, 3:6], use="pairwise") %>% round(2)
+```
+
+With penguins, all of the missing values are in the same observations, so we won't get a different result.  Let's look at a different data frame:
+
+```{r}
+missing_df <- data.frame(a = c(1:10),
+                         b = c(NA, 4, NA, 5, NA, 6, 7, 8, 10, 12),
+                         c = c(1, NA, 2, NA, 10, 20, 30, 40, 60, 80), 
+                         d = c(1, 4, 7, 9, 5, NA, NA, 6, 3, 4))
+
+cor(missing_df, use="pairwise") %>% round(2)
+
+complete.cases(missing_df)
+cor(missing_df, use="complete") %>% round(2)  # only using 3 obs
 
 ```
 
-### EXERCISE
-
-Is the number of fatal incidents correlated to the number of total incidents?
+There are also different types of correlation.  You can choose the correlation method from "pearson", "kendall", "spearman".  Pearson is the default and is appropriate for continuous data that is roughly normally distributed (more on this next week).  Kendall and Spearman are rank-based correlations that work well for skewed data - instead of computing the correlation between the absoute values of the varibles, they rank order the values of eac variable, and then compute a correlation between the ranks.  
 
 ```{r}
-
+cor(penguins$bill_depth_mm, penguins$bill_length_mm, 
+    use="pairwise")
+cor(penguins$bill_depth_mm, penguins$bill_length_mm, 
+    use="pairwise", method="kendall")
+cor(penguins$bill_depth_mm, penguins$bill_length_mm, 
+    use="pairwise", method="spearman")
 ```
 
-### EXERCISE
 
-Does the method of calculating correlation change your inference in this case?
+
+
+# Odds Ratios
+
+A common statistic computed in clinical studies is an odds ratio.  This compares how likely something is for one group to another.  To compute this, we first need to compute a likelihood (odds) for a specific group for a given event happening.  Unless we're working with a more complicated statistical model, this is generally just the proportion of observations in a group that meet some criteria.  
+
+Let's look at the likelihood that a penguin is heavier than 4kg by sex
 
 ```{r}
+# overall
+penguins %>%
+  mutate(heavy = body_mass_g > 4000) %>%
+  summarize(heavy_prop = sum(heavy, na.rm=TRUE)/sum(!is.na(heavy))) # count not missing instead of n()
 
+penguins %>%
+  mutate(heavy = body_mass_g > 4000) %>%
+  group_by(sex) %>%
+  summarize(heavy_prop = sum(heavy, na.rm=TRUE)/sum(!is.na(heavy))) # count not missing instead of n()
 ```
+
+This is a time when it might be more convenient to use base R:
+
+```{r}
+male_prop <- sum(penguins$body_mass_g[penguins$sex == "male" & !is.na(penguins$sex)] > 4000)/
+  sum(!is.na(penguins$body_mass_g[penguins$sex == "male" & !is.na(penguins$sex)]))
+
+female_prop <- sum(penguins$body_mass_g[penguins$sex == "female" & !is.na(penguins$sex)] > 4000)/
+  sum(!is.na(penguins$body_mass_g[penguins$sex == "female" & !is.na(penguins$sex)]))
+
+# or pull them out of our result above:
+group_props <- penguins %>%
+  mutate(heavy = body_mass_g > 4000) %>%
+  filter(!is.na(sex)) %>%  ## drop the missing
+  group_by(sex) %>%
+  summarize(heavy_prop = sum(heavy, na.rm=TRUE)/sum(!is.na(heavy))) 
+
+male_prop <- group_props$heavy_prop[group_props$sex == "male"]
+male_prop
+female_prop <- group_props$heavy_prop[group_props$sex == "female"]
+female_prop
+```
+
+These are the individual odds of a male and female penguin being > 4kg.  The odds ratio is the ratio of these two values (one divided by the other):
+
+```{r}
+male_prop/female_prop
+```
+
+Male penguins are 1.8 times more likely to be > 4kg than female penguins.  For every 1 female penguin > 4kg, there are 1.8 male penguins > 4kg.
+
+Computed the other way:
+
+```{r}
+female_prop/male_prop
+```
+
+Female penguins are about half (.54) as likely as male penguins to be > 4kg.  
+
+
+
+
