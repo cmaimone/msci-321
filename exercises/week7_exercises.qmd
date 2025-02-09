@@ -23,6 +23,60 @@ diabetes <- read_csv("data/diabetes.csv")
 
 ## Exercise 
 
+Is the cholesterol level of participants with glyhb > 7 higher than those with lower glyhb levels?
+
+```{r}
+
+
+```
+
+
+
+## Exercise 
+
+Is the average height of male participants greater than that of female participants?  Use a t-test.
+
+```{r}
+
+
+```
+
+
+## Exercise 
+
+Is the waist to hip ratio different for male and female participants?
+
+```{r}
+
+
+```
+
+
+## Exercise 
+
+For participants with 2 blood pressure readings, is the second reading higher than the first?
+
+```{r}
+
+
+```
+
+
+## Exercise
+
+Is the height of male participants from the locations the same?
+
+```{r}
+
+
+```
+
+
+
+
+
+## Exercise 
+
 Is the proportion of women in the data with glyhb > 7 higher than the proportion of men with glyhb > 7?
 
 ```{r}
@@ -44,16 +98,6 @@ Make a new variable indicating whether a participant's waist measurement is grea
 
 ## Exercise
 
-Run a linear regression model with glyhb as the dependent variable and physical measurements of participants (height, weight, waist, hip) and gender as predictor variables.  Which of these variables are significant predictors?
-
-```{r}
-
-
-```
-
-
-## Exercise
-
 Is frame size independent of the height of participants?
 
 What if you compute it by gender?
@@ -64,67 +108,13 @@ What if you compute it by gender?
 ```
 
 
-More coming soon...
 
 ## Exercise
 
-
-
-```{r}
-
-```
-
-
-## Exercise
-
-
+Run a linear regression model with glyhb as the dependent variable and physical measurements of participants (height, weight, waist, hip) and gender as predictor variables.  Which of these variables are significant predictors?
 
 ```{r}
 
-```
-
-
-## Exercise
-
-
-
-```{r}
-
-```
-
-
-## Exercise
-
-
-
-```{r}
-
-```
-
-
-## Exercise
-
-
-
-```{r}
-
-```
-
-
-## Exercise
-
-
-
-```{r}
-
-```
-
-
-## Exercise
-
-
-
-```{r}
 
 ```
 

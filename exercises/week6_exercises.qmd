@@ -65,36 +65,6 @@ Create a new variable chol_z that converts the chol variable into z-scores.
 ```
 
 
-## Exercise 
-
-Is the average height of male participants greater than that of female participants?  Use a t-test.
-
-```{r}
-
-
-```
-
-
-## Exercise 
-
-Is the waist to hip ratio different for male and female participants?
-
-```{r}
-
-
-```
-
-
-
-## Exercise 
-
-Is the cholesterol level of participants with glyhb > 7 higher than those with lower glyhb levels?
-
-```{r}
-
-
-```
-
 
 ## Exercise 
 
@@ -115,25 +85,6 @@ Compute a 95% confidence interval on the average stab.glu value for patients 80 
 
 ```
 
-
-## Exercise 
-
-For participants with 2 blood pressure readings, is the second reading higher than the first?
-
-```{r}
-
-
-```
-
-
-## Exercise 
-
-Create two random samples of 20 participants each from the diabetes data.  Is the mean stab.glu value different for the two samples?
-
-```{r}
-
-
-```
 
 
 ## Exercise 
@@ -166,15 +117,6 @@ How many standard deviations above average is a participant with a systolic bloo
 
 ```
 
-
-## Exercise
-
-Is the height of male participants from the locations the same?
-
-```{r}
-
-
-```
 
 
 

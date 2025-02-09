@@ -1,0 +1,128 @@
+---
+title: Chi-squared tests
+output:
+  html_document:
+    df_print: paged
+    code_download: TRUE
+    toc: true
+    toc_depth: 1
+editor_options:
+  chunk_output_type: console
+---
+
+```{r}
+library(tidyverse)
+library(palmerpenguins)
+library(janitor)
+```
+
+# Chi-squared tests
+
+Chi-squared tests are used when we are comparing counts or performing tests with discrete events or categorical data.  If you can make a frequency table, and have a question about the distribution of counts in that table, you're working with a chi-squared test (or variant).  
+
+When sample sizes are small, Fisher's exact test is used instead.  It's always valid, but it's more conservative (you're less likely to reject the null hypothesis), so it's typically only used when needed.  Suggested use is roughly when the expected count in a quarter of the cells (or more) is 5 or less.  
+
+Is the proportion of male and female penguins in our data the same across species?
+
+```{r}
+penguins %>% 
+  filter(!is.na(species), !is.na(sex)) %>%
+  tabyl(species, sex)
+
+penguins %>% 
+  filter(!is.na(species), !is.na(sex)) %>%
+  tabyl(species, sex) %>%
+  chisq.test()  # works because we have the janitor package loaded
+
+# or 
+chisq.test(table(penguins$species, penguins$sex))
+```
+
+Unsurprisingly (once you've seen the counts), yes (or, more accurately, we cannot reject the null hypothesis that they are the same.
+
+If we flip the table, it's the same statistic.
+
+```{r}
+penguins %>% 
+  filter(!is.na(species), !is.na(sex)) %>%
+  tabyl(sex, species)
+
+penguins %>% 
+  filter(!is.na(species), !is.na(sex)) %>%
+  tabyl(sex, species) %>%
+  chisq.test()
+```
+
+Another interpretation of this is: are sex and species independent?  That framing doesn't make much sense in this case, but there are other times when that's what we might care about.
+
+```{r}
+cer <- read_csv("data/cervical_cancer_data.csv")
+```
+
+Is there a relationship between smoking and being diagnosed with an STD?
+
+```{r}
+tabyl(cer, Is_Smoking, Is_Diagnosed_with_STDs)
+
+cer %>%
+  filter(!is.na(Is_Smoking), !is.na(Is_Diagnosed_with_STDs)) %>%
+  tabyl(Is_Smoking, Is_Diagnosed_with_STDs) %>%
+  adorn_percentages()
+```
+
+We're just ignoring the missing for now (probably not a good analytical decision)
+
+```{r}
+# using table() here because it drops missing by default
+chisq.test(table(cer$Is_Smoking, cer$Is_Diagnosed_with_STDs))
+```
+
+The Yates correction is most relevant for smaller counts than we have here, but it doesn't hurt for it to be applied.  It is related to approximating what is really discrete probabilities (from counts - stepwise functions) with a continuous distribution.
+
+This is the same as prop.test():
+
+```{r}
+prop.test(table(cer$Is_Smoking, cer$Is_Diagnosed_with_STDs))
+```
+
+Fisher's exact test:
+
+```{r}
+matrix(c(2,4,5,4,6,7), byrow=TRUE, ncol=3)
+
+vals <- matrix(c(2,4,5,4,6,7), byrow=TRUE, ncol=3)
+
+vals[1,]/vals[2,]
+
+# Small cell counts, so we get a warning
+chisq.test(vals)
+
+# use Fisher's exact:
+fisher.test(vals)
+```
+
+
+## With Tidyverse
+
+With the infer package:
+
+```{r}
+cer %>%
+  chisq_test(Is_Smoking ~ Is_Diagnosed_with_STDs)
+```
+
+
+
+### EXERCISE
+
+Using the cer data set, make a new variable indicating whether the participant is 18 or older.  Is this new categorical age variable independent of whether the participant is smoking?
+
+```{r}
+
+```
+
+
+
+
+
+
