@@ -293,7 +293,7 @@ In R, using functions like `sample()`, `group_by()`, and `sample_n()` helps you 
 R provides four functions to work with every probability distribution that it implements. Each one calculates a different quantity of interest. No matter what distribution you're talking about, there's a `d` function, a `p` function, a `q` function and a `r` function.
 
 | What it does                       | Prefix | Binomial distribution | Normal distribution |
-|-----------------------|-----------------|-----------------|-----------------|
+|--------------------|-----------------|-----------------|-----------------|
 | get the probability (density) of   | d      | `dbinom()`            | `dnorm()`           |
 | find the cumulative probability of | p      | `pbinom()`            | `pnorm()`           |
 | generate random number from        | r      | `rbinom()`            | `rnorm()`           |
@@ -685,7 +685,7 @@ Hypothesis tests are commonly used to determine whether a certain treatment has 
 
 -   **ANOVA (Analysis of Variance):** Tests if means differ between three or more groups.
 
-### DEMO
+### DEMO: different from known population characteristics
 
 Say you want to know if your fasting blood glucose falls within the expected range or not. From the medical literature you find out that the population mean is 85 mg/dL with a standard deviation of 15 mg/dL. You measured your blood glucose as 125 mg/dL - how worried should you be?
 
@@ -762,3 +762,48 @@ You want to know if the participant's weight loss is typical, or if it's signifi
 ```{r}
 
 ```
+
+### DEMO: Correlation test
+
+Most of the time, R will implement functions that do a lot of the heavy-lifting for you, and give you an easy way to run hypothesis tests with a simple function. **`cor.test()`** is one such function to measure association or correlation between 2 variables.
+
+Correlation measures the strength and direction of a linear relationship between two variables. The **correlation coefficient (r)** quantifies this relationship, 1 is perfect positive correlation, 0 is no correlation and -1 is perfect negative correlation.
+
+**Types of Correlation Tests in `cor.test()`**:
+
+-   **Pearson's Correlation**: Measures the linear relationship between two continuous variables.
+-   **Spearman's Rank Correlation**: Used when the relationship between variables is not linear but can be ranked.
+-   **Kendall's Tau**: A non-parametric test that measures the strength of association between two variables, also based on ranks.
+
+The `cor.test()` function tests if the correlation coefficient is significantly different from zero.
+
+`{cor.test(x, y, method = c("pearson", "kendall", "spearman"), alternative = c("two.sided", "less", "greater"), conf.level = 0.95)}`
+
+**Example Problem:**
+
+You want to know if there is a significant correlation between `incidents_85_99` and `incidents_00_14`
+
+```{r}
+# let's plot it
+plot(air$incidents_85_99, air$incidents_00_14,
+     pch = 16, col = "blue")
+
+# run correlation test
+cor_test <- cor.test(height, weight, method = "pearson")
+```
+
+Perform a correlation test as follows:
+
+```{r}
+# Step 1: Visualize the data with a scatter plot
+plot(height, weight, main = "Height vs Weight",
+     xlab = "Height (cm)", ylab = "Weight (kg)", 
+     pch = 16, col = "blue")
+
+# Step 2: Run the correlation test (Pearson's method)
+cor_test <- cor.test(air$incidents_85_99, air$incidents_00_14, method = "pearson")
+cor_test
+
+```
+
+How do you interpret the results? What happens if you change the method parameter?
