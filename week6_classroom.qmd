@@ -486,6 +486,7 @@ hist(population,
      main = "Population Distribution (Uniform)", xlab = "Value", col = "lightblue", border = "white")
 hist(sample_means, 
      main = "Sampling Distribution of the Mean", xlab = "Sample Mean", col = "lightgreen", border = "white")
+par(mfrow=c(1,1)) # reset par 
 
 # Show the mean of the sampling distribution
 mean(sample_means)
