@@ -7,45 +7,40 @@ editor_options:
   chunk_output_type: console
 ---
 
-
 ```{r}
 library(tidyverse)
 library(janitor)
 ```
 
-Load `data/diabetes.csv`.  Basic information on the dataset is available here: https://hbiostat.org/data/repo/diabetes
-
+Load `data/diabetes.csv`. Basic information on the dataset is available here: https://hbiostat.org/data/repo/diabetes
 
 ```{r}
 diabetes <- read_csv("data/diabetes.csv")
 ```
 
+## Exercise
 
-## Exercise 
-
-There are two drugs, A and B.  If A cures 15% of patients, and B cures 18% of patients.  Simulate an experiments where each drug is taken by 20 different patients.  Which drug cured more patients in the experiment?
-
-```{r}
-
-
-```
-
-
-## Exercise 
-
-Repeat the exercise above, but run the experiment 10 times.  In how many instances does drug B cure more people than drug A?
+There are two drugs, A and B. If A cures 15% of patients, and B cures 18% of patients. Simulate an experiments where each drug is taken by 20 different patients. Which drug cured more patients in the experiment?
 
 ```{r}
 
 
 ```
 
+## Exercise
 
-## Exercise 
+Repeat the exercise above, but run the experiment 10 times. In how many instances does drug B cure more people than drug A?
 
-* Get the mean and standard deviation of the bp.1s variable in the diabetes dataset.  
-* Create a normal distribution with this mean and standard deviation.  
-* Then compute the 75th and 90th percentiles from both the theoretical normal distribution and from the actual data.
+```{r}
+
+
+```
+
+## Exercise
+
+-   Get the mean and standard deviation of the bp.1s variable in the diabetes dataset.\
+-   Create a normal distribution with this mean and standard deviation.\
+-   Then compute the 75th and 90th percentiles from both the theoretical normal distribution and from the actual data.
 
 How do these compare?
 
@@ -54,8 +49,7 @@ How do these compare?
 
 ```
 
-
-## Exercise 
+## Exercise
 
 Create a new variable chol_z that converts the chol variable into z-scores.
 
@@ -64,9 +58,7 @@ Create a new variable chol_z that converts the chol variable into z-scores.
 
 ```
 
-
-
-## Exercise 
+## Exercise
 
 Compute a 95% confidence interval on the average stab.glu value
 
@@ -75,8 +67,7 @@ Compute a 95% confidence interval on the average stab.glu value
 
 ```
 
-
-## Exercise 
+## Exercise
 
 Compute a 95% confidence interval on the average stab.glu value for patients 80 years old or older.
 
@@ -85,9 +76,7 @@ Compute a 95% confidence interval on the average stab.glu value for patients 80 
 
 ```
 
-
-
-## Exercise 
+## Exercise
 
 What is the correlation between the two blood sugar measures (glyhb, stab.glu)? Is it significantly different from 0?
 
@@ -96,9 +85,7 @@ What is the correlation between the two blood sugar measures (glyhb, stab.glu)? 
 
 ```
 
-
-
-## Exercise 
+## Exercise
 
 What percentile is a participant with a glyhb value of 12?
 
@@ -106,7 +93,6 @@ What percentile is a participant with a glyhb value of 12?
 
 
 ```
-
 
 ## Exercise
 
@@ -117,19 +103,13 @@ How many standard deviations above average is a participant with a systolic bloo
 
 ```
 
+## Challenge Exercise
 
+Which of the variables in the diabetes data are notably skewed? Meaning that the distribution is not symmetrical around the mean - based on human estimation, not a statistical test. Look at stab.glu, glyhb, chol, hdl, bp.1s, bp.1d
 
-
-## Challenge Exercise 
-
-Which of the variables in the diabetes data are notably skewed?  Meaning that the distribution is not symmetrical around the mean - based on human estimation, not a statistical test.  Look at stab.glu, glyhb, chol, hdl, bp.1s, bp.1d
-
-There are a few different ways you could investigate this - computing summary measures and plotting can both be useful.  If you're plotting, the boxplot() function might be useful.
+There are a few different ways you could investigate this - computing summary measures and plotting can both be useful. If you're plotting, the boxplot() function might be useful.
 
 ```{r}
 
 
 ```
-
-
-
