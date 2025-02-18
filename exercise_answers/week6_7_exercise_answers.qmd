@@ -1,12 +1,11 @@
 ---
-title: "Week 6 Exercises (Answers)"
+title: "Weeks 6 & 7 Exercises (Answers)"
 format: html
 project:
   execute-dir: project
 editor_options: 
   chunk_output_type: console
 ---
-
 
 ```{r}
 library(tidyverse)
@@ -23,11 +22,15 @@ diabetes <- read_csv("data/diabetes.csv")
 
 ## Exercise 
 
-There are two drugs, A and B.  If A cures 15% of patients, and B cures 18% of patients.  Simulate an experiments where each drug is taken by 20 different patients.  Which drug cured more patients in the experiment?
+There are two drugs, A and B.  If A cures 15% of patients, and B cures 18% of patients.  Simulate an experiment where each drug is taken by 20 different patients by taking random draws from a binomial distribution.  The n argument is the number of experiments, and the size argument is the number of people
+
+Which drug cured more patients in the simulated experiment?
 
 ```{r}
 rbinom(n=1, size=20, prob=.15)
 rbinom(n=1, size=20, prob=.18)
+
+# your answer output may differ due to random seeds being different
 ```
 
 
@@ -36,12 +39,13 @@ rbinom(n=1, size=20, prob=.18)
 Repeat the exercise above, but run the experiment 10 times.  In how many instances does drug B cure more people than drug A?
 
 ```{r}
-drugA <- rbinom(n=30, size=20, prob=.15)
-drugB <- rbinom(n=30, size=20, prob=.18)
+drugA <- rbinom(n=10, size=20, prob=.15)
+drugB <- rbinom(n=10, size=20, prob=.18)
 
 sum(drugB > drugA)
-```
 
+# your answer output may differ due to random seeds being different
+```
 
 ## Exercise 
 
@@ -89,7 +93,6 @@ Is the waist to hip ratio different for male and female participants?
 diabetes$waist_hip <- diabetes$waist / diabetes$hip
 t.test(diabetes$waist_hip ~ diabetes$gender)
 ```
-
 
 
 ## Exercise 
@@ -150,27 +153,6 @@ mean(diabetes$bp.2s - diabetes$bp.1s, na.rm=TRUE)
 
 ## Exercise 
 
-Create two random samples of 20 participants each from the diabetes data.  Is the mean stab.glu value different for the two samples?
-
-```{r}
-sample1 <- sample(diabetes$stab.glu, 20)
-sample2 <- sample(diabetes$stab.glu, 20)
-t.test(sample1, sample2)
-
-# to sample participants instead of just the values:
-sample1 <- diabetes[sample.int(nrow(diabetes), 20), ]
-sample2 <- diabetes[sample.int(nrow(diabetes), 20), ]
-t.test(sample1$stab.glu, sample2$stab.glu)
-
-# with tidyverse
-sample1 <- slice_sample(diabetes, n=20)
-sample2 <- slice_sample(diabetes, n=20)
-t.test(sample1$stab.glu, sample2$stab.glu)
-```
-
-
-## Exercise 
-
 What is the correlation between the two blood sugar measures (glyhb, stab.glu)? Is it significantly different from 0?
 
 ```{r}
@@ -181,7 +163,7 @@ cor.test(diabetes$stab.glu, diabetes$glyhb, use="pairwise")
 
 ## Exercise 
 
-What percentile is a participant with a glyhb value of 12?
+What percentile is a participant with a glyhb value of 12?  Hint: don't use the quantile function for this - this is the reverse question.  What proportion of participants have a value less than this?
 
 ```{r}
 sum(diabetes$glyhb <= 12, na.rm=TRUE)/sum(!is.na(diabetes$glyhb))
@@ -215,6 +197,54 @@ t.test(height ~ location, data = diabetes[diabetes$gender == "male",])
 ```
 
 
+## Exercise 
+
+Is the proportion of women in the data with glyhb > 7 higher than the proportion of men with glyhb > 7?
+
+```{r}
+# with prop.test
+diabetes$high_a1c <- diabetes$glyhb > 7
+table(diabetes$high_a1c, diabetes$gender)
+table(diabetes$gender[!is.na(diabetes$high_a1c)]) ## important to remove missing - otherwise proportions are different
+prop.test(c(34, 26), c(228, 162))
+
+# all in one
+# using ! with diabetes$high_a1c to get the table in the expected order
+prop.test(table(diabetes$gender, !diabetes$high_a1c))
+
+# with infer package:
+library(infer)
+diabetes %>% 
+  mutate(high_a1c = glyhb > 7) %>%
+  prop_test(high_a1c ~ gender)
+
+# equivalent to chi-squared test:
+chisq.test(diabetes$high_a1c, diabetes$gender)
+```
+
+## Exercise
+
+Make a new variable indicating whether a participant's waist measurement is greater than their hip measurement.  Is this new variable independent of gender?
+
+```{r}
+diabetes$waist_larger <- diabetes$waist > diabetes$hip
+tabyl(diabetes, waist_larger, gender) 
+chisq.test(diabetes$waist_larger, diabetes$gender)
+```
+
+
+## Exercise
+
+Run a linear regression model with glyhb as the dependent variable and physical measurements of participants (height, weight, waist, hip) and gender as predictor variables.  Which of these variables are significant predictors?
+
+```{r}
+reg1 <- lm(glyhb ~ gender + height + weight + waist + hip, data = diabetes)
+summary(reg1)
+```
+
+
+
+
 
 ## Challenge Exercise 
 
@@ -229,6 +259,7 @@ hist(diabetes$chol)
 # The following would generally be considered skewed: stab.glu, glyhb, hdl 
 # the following aren't very skewed: chol, bp.1d, bp.1s (this one is a little off because it's truncated at 0, but it's still roughly normal)
 ```
+
 
 
 

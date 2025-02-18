@@ -1,0 +1,214 @@
+---
+title: "Weeks 6 & 7 Exercises"
+format: html
+project:
+  execute-dir: project
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(tidyverse)
+library(janitor)
+```
+
+Load `data/diabetes.csv`.  Basic information on the dataset is available here: https://hbiostat.org/data/repo/diabetes
+
+
+```{r}
+diabetes <- read_csv("data/diabetes.csv")
+```
+
+
+## Exercise 
+
+There are two drugs, A and B.  If A cures 15% of patients, and B cures 18% of patients.  Simulate an experiment where each drug is taken by 20 different patients by taking random draws from a binomial distribution.  The n argument is the number of experiments, and the size argument is the number of people
+
+Which drug cured more patients in the simulated experiment?
+
+```{r}
+
+
+```
+
+
+## Exercise 
+
+Repeat the exercise above, but run the experiment 10 times.  In how many instances does drug B cure more people than drug A?
+
+```{r}
+
+
+```
+
+## Exercise 
+
+* Get the mean and standard deviation of the bp.1s variable in the diabetes dataset.  
+* Create a normal distribution with this mean and standard deviation.  
+* Then compute the 75th and 90th percentiles from both the theoretical normal distribution and from the actual data.
+
+How do these compare?
+
+```{r}
+
+
+```
+
+
+## Exercise 
+
+Create a new variable chol_z that converts the chol variable into z-scores.
+
+```{r}
+
+
+```
+
+
+## Exercise 
+
+Is the average height of male participants greater than that of female participants?  Use a t-test.
+
+```{r}
+
+
+```
+
+
+## Exercise 
+
+Is the waist to hip ratio different for male and female participants?
+
+```{r}
+
+
+```
+
+
+## Exercise 
+
+Is the cholesterol level of participants with glyhb > 7 higher than those with lower glyhb levels?
+
+```{r}
+
+
+```
+
+
+## Exercise 
+
+Compute a 95% confidence interval on the average stab.glu value
+
+```{r}
+
+
+```
+
+
+## Exercise 
+
+Compute a 95% confidence interval on the average stab.glu value for patients 80 years old or older.
+
+```{r}
+
+
+```
+
+
+## Exercise 
+
+For participants with 2 blood pressure readings, is the second reading higher than the first?
+
+```{r}
+
+
+```
+
+
+## Exercise 
+
+What is the correlation between the two blood sugar measures (glyhb, stab.glu)? Is it significantly different from 0?
+
+```{r}
+
+
+```
+
+
+
+## Exercise 
+
+What percentile is a participant with a glyhb value of 12?  Hint: don't use the quantile function for this - this is the reverse question.  What proportion of participants have a value less than this?
+
+```{r}
+
+
+```
+
+
+## Exercise
+
+How many standard deviations above average is a participant with a systolic blood pressure of 170?
+
+```{r}
+
+
+```
+
+
+## Exercise
+
+Is the height of male participants from the locations the same?
+
+```{r}
+
+
+
+```
+
+
+## Exercise 
+
+Is the proportion of women in the data with glyhb > 7 higher than the proportion of men with glyhb > 7?
+
+```{r}
+
+
+```
+
+## Exercise
+
+Make a new variable indicating whether a participant's waist measurement is greater than their hip measurement.  Is this new variable independent of gender?
+
+```{r}
+
+
+```
+
+
+## Exercise
+
+Run a linear regression model with glyhb as the dependent variable and physical measurements of participants (height, weight, waist, hip) and gender as predictor variables.  Which of these variables are significant predictors?
+
+```{r}
+
+
+```
+
+
+
+
+
+## Challenge Exercise 
+
+Which of the variables in the diabetes data are notably skewed?  Meaning that the distribution is not symmetrical around the mean - based on human estimation, not a statistical test.  Look at stab.glu, glyhb, chol, hdl, bp.1s, bp.1d
+
+There are a few different ways you could investigate this - computing summary measures and plotting can both be useful.  If you're plotting, the boxplot() function might be useful.
+
+```{r}
+
+```
+
+
+
+
