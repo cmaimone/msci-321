@@ -1,0 +1,639 @@
+---
+output:
+  html_document:
+    df_print: paged
+    code_download: TRUE
+    toc: true
+    toc_depth: 1
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  eval=FALSE, warning=FALSE, error=FALSE
+)
+```
+
+```{r}
+if (!require("babynames")) install.packages("babynames")
+if (!require("palmerpenguins")) install.packages("palmerpenguins")
+if (!require("tidyverse")) install.packages("tidyverse")
+
+library(palmerpenguins)
+library(tidyverse)
+library(babynames)
+```
+
+# Writing your own functions
+
+In this section we are going to learn some advanced concepts that are going to make you into a full-fledged R programmer. Before this you only used the built-in functions R came with, as well as the functions contained in packages. Now we will learn about building functions ourselves.
+
+## Declaring functions in R
+
+The standard syntax to declare functions in R is as follows:
+
+```         
+function_name <- function(arguments) {
+  expressions
+  return(value) # optional
+}
+```
+
+Suppose you want to create the following function: $$f(x) = 1/\sqrt{x}$$ Writing this in R is quite simple:
+
+```{r}
+my_function <- function(x) {
+  1/sqrt(x)
+}
+```
+
+The argument of the function, `x`, gets passed to the `function()` function and the *body* of the function contains the function definition. Of course, you could define functions that use more than one input.
+
+```{r}
+my_function <- function(x, y) {
+  1/sqrt(x + y)
+}
+```
+
+Functions written by the user get called just the same way as functions included in R:
+
+```{r}
+my_function(20, 100)
+```
+
+You could also provide default values to the function's arguments, which are values that are used if the user omits them:
+
+```{r}
+my_function <- function(x, y=1){
+  1/sqrt(x + y)
+}
+
+# call the function
+my_function(20)
+```
+
+```{r}
+1 / sqrt(20 + 1)
+```
+
+What if you don't know how many arguments you will have to the function?
+
+For example, say you are collecting the grades of all students who gave an exam to calculate the average, but different numbers of students give the exam each year. You can pass a list or vector of values as the function argument as below:
+
+```{r}
+# define the function
+average_grade_calculator <- function(x) {
+  mean(x)
+}
+
+# call the function
+grades <-  c(45, 67, 89, 99, 100, 34, 78, 94)
+average_grade_calculator(grades)
+```
+
+What if you wanted to calculate two different values, such as the mean and the standard deviation?
+
+To be able to do this, you must put your values in a list, and return the list of values. For example:
+
+```{r}
+# define the function
+average_and_sd_calculator <- function(x) {
+  c(mean(x), sd(x))
+}
+
+# call the function
+average_and_sd_calculator(grades)
+```
+
+You're still returning a single object, but it's a vector.
+
+You can also return a named list:
+
+```{r}
+# define the function
+average_and_sd_calculator <- function(x) {
+  list("mean_grade" = mean(x),
+       "sd_grade" = sd(x))
+}
+
+# call the function
+average_and_sd_calculator(grades)
+```
+
+In general, function names should be of the form: `function_name()`. Verbs or action words are preferred. Always give your function very explicit names!
+
+### EXERCISE 1
+
+Write a function to calculate the volume of a cube given the length, width, and height values. Set default value for each argument to 1.
+
+Formula for a volume of a cube: $f(l,w,h) = lwh$
+
+```{r}
+calculate_volumn <- function(l,w,h) {
+  l * w * h
+}
+
+calculate_volumn(1,1,1)
+```
+
+### EXERCISE 2
+
+Write a function to calculate present age given birth year. Add the current year as a default value for the calculation
+
+```{r}
+age_calculator <- function(x, y=2024) {
+  y - x
+}
+
+age_calculator(1998)
+```
+
+## Returning values
+
+Usually, the last evaluated value is returned as the function output. Therefore the function below will only return one value as the output.
+
+Let's re-write the `average_and_sd_calculator` function to see how this works:
+
+```{r}
+# define the function
+average_and_sd_calculator <- function(x) {
+  mean_x <- mean(x)
+  sd_x <- sd(x)
+}
+
+# call the function
+average_and_sd_calculator(grades)
+```
+
+What did the function return? Essentially, the function evaluated all the statements but did not return any value since it was not asked to! In order to write robust code, you can use an explicit `return()` statement at the end of your functions to return the values you are interested in.
+
+```{r}
+# define the function
+average_and_sd_calculator <- function(x) {
+  mean_x <- mean(x)
+  sd_x <- sd(x)
+  
+  return(mean_x)
+}
+
+# call the function
+average_and_sd_calculator(grades)
+```
+
+You are still returning a single object as earlier, but doing so more explicitly.
+
+Let's see what happens when we try to return two objects explicitly with a `return()` statement:
+
+```{r, error=TRUE, eval=FALSE}
+
+# define the function
+average_and_sd_calculator <- function(x) {
+  mean_x <- mean(x)
+  sd_x <- sd(x)
+  
+  return(mean_x, sd_x) # does not work
+}
+
+# call the function
+average_and_sd_calculator(grades)
+```
+
+We can bundle together several objects and return them as a single list of vector:
+
+```{r}
+# ------return as a vector------
+average_and_sd_calculator <- function(x) {
+  mean_x <- mean(x)
+  sd_x <- sd(x)
+  
+  return(c(mean_x, sd_x)) # works!
+}
+
+# call the function
+average_and_sd_calculator(grades)
+
+
+# ------return as a list------
+average_and_sd_calculator <- function(x) {
+  mean_x = mean(x)
+  sd_x = sd(x)
+  
+  return(list(mean_x, sd_x)) # also works!
+}
+
+# call the function
+average_and_sd_calculator(grades)
+
+
+# ------return as a named list------
+average_and_sd_calculator <- function(x) {
+  mean_x = mean(x)
+  sd_x = sd(x)
+  
+  return(list("mean_grade" = mean_x, "sd_grade" = sd_x)) # also works!
+}
+
+# call the function
+average_and_sd_calculator(grades)
+```
+
+### EXERCISE 3
+
+Write a function which takes in a data frame, removes all incomplete cases from it (can use `na.omit()` or `drop_na()`), adds a column called `complete` with value `TRUE` for all rows and returns the cleaned data back. Test your function on the `penguins` data set from package `{palmerpenguins}`
+
+```{r}
+library(palmerpenguins)
+
+data_cleaner <- function(df) {
+  df %>% 
+    drop_na() %>%
+    mutate(complete = TRUE)
+  return(df)
+}
+
+data_cleaner(penguins)
+```
+
+### EXERCISE 4
+
+Write a function which takes in two vectors `x` and `y` and returns the $R^2$ value for a linear model y \~ x. Use it to find the $R^2$ value for a linear fit between `body_mass_g` and `bill_length_mm` for the `penguins` data.
+
+**Hint**: use `summary` on the output of `lm` and extract the `r.squared`
+
+```{r}
+r2_calculator <- function(x, y){
+  # x : vector
+  # y : vector
+  # returns - a single value
+  return(summary(lm(y ~ x))$r.squared)
+}
+
+r2_calculator(penguins$body_mass_g, penguins$bill_length_mm)
+```
+
+## Anonymous functions
+
+As the name implies, anonymous functions are functions that do not have a name. These are useful inside functions that have other functions as arguments such as `map`. Anonymous functions get defined in a very similar way to regular functions, you just skip the name and that's it.
+
+Let's see a simple example:
+
+```{r}
+# named function
+squaring_func <- function(x) {x^2}
+squaring_func(3)
+
+# anonymous function
+(function(x) x^2)(3)
+```
+
+Let's see a few more examples
+
+```{r}
+# named
+vol_cube <- function(x, y, z){x*y*z}
+vol_cube(3,4,2)
+
+# volume of a cube
+(function(x,y,z) x*y*z)(3,4,2)
+```
+
+```{r}
+# named
+age <- function(birth_year, present=2023) {present - birth_year}
+age(1998)
+
+# present age given birth year
+(function(birth_year, present=2023) present - birth_year)(1998)
+```
+
+What's the point of anonymous functions?
+
+Suppose I'm trying to calculate the column means of a data frame `X` . We learned in intro to Tidyverse workshop that we can use `across()` with `summarize()` to calculate the column means.
+
+```{r}
+X <- data.frame(matrix(1:30, nrow = 10, ncol = 3))
+X[c(2,3,4),2] <- NA # add some missing values
+X[8,3] <- NA # add some missing values
+
+print(X)
+
+X %>%
+  summarize(across(everything(), mean))
+```
+
+Because there are missing values in some columns, I want to specify `na.rm=TRUE` inside the `mean()` function. I could define a new mean function with that specific argument.
+
+```{r}
+mean_ignore_na <- function(x) {
+  mean(x, na.rm = TRUE)
+}
+
+X %>%
+  summarize(across(everything(), mean_ignore_na))
+```
+
+We can avoid creating a new function for a single use case; we can use an anonymous function!
+
+```{r}
+X %>%
+  summarize(across(everything(), function(x) mean(x, na.rm = TRUE)))
+```
+
+### EXERCISE 5
+
+Rewrite the following function as an anonymous function. Use it to select all columns that end with "mm" in the data frame `penguins`
+
+```         
+pattern_match_colnames <- function(df, pattern) {
+  df %>% 
+    select(ends_with(pattern))
+}
+```
+
+```{r}
+(function(df, pattern) df %>% select(ends_with(pattern)))(penguins, "mm")
+```
+
+## Passing columns of data to functions with `{{}}`
+
+So far we have looked at functions that take vectors as arguments, however, in many situations, you will want to write functions that look similar to this:
+
+```         
+my_function(my_data, one_column_inside_data)
+```
+
+Such a function will be useful in situations where you will have to apply a certain number of operations to columns for different data frames, especially if you are working with `tidyverse`.
+
+For example, if you need to create tables of descriptive statistics or graphs periodically, it might be more efficient to put these operations inside a function and then call the function whenever you need it, on the fresh batch of data.
+
+Let's see how that approach might work:
+
+```{r}
+# get the mean value of a column
+simple_function <- function(dataset, col_name) {
+  
+  dataset %>% 
+    summarize(mean = mean(col_name, na.rm=TRUE))
+}
+
+# call the function
+simple_function(penguins, "body_mass_g")
+```
+
+The variable `col_name` is passed to `simple_function()` as a string, but `group_by()` requires a variable name.
+
+What we're would like to achieve above is:
+
+```{r}
+penguins %>% summarize(mean = mean(body_mass_g, na.rm = TRUE))
+```
+
+Maybe we don't quote `body_mass_g` like we do with `dplyr` functions?
+
+```{r error=TRUE}
+simple_function(penguins, body_mass_g)
+```
+
+Alright, so that also didn't work.
+
+So what is happening here? To understand what's happening, we will take a quick detour and make a distinction between two kinds of variables: **env-variables** and **data variables**
+
+-   **env-variables**: "programming"variables that live inside your environment. Usually created with `<-` operator
+-   **data-variables**: "statistical" variables that live inside your data frame. Usually come with data files (`.csv`, `.xlsx`), and are accessed in the context of your data frame.
+
+In our case, `penguins` is an env-variable with data-variables such as `species`, `island`, `bill_length_mm`, and so on. With `dplyr` functions, when we pass the column names as variables, they are interpreted as data-variables. This technique, which allows us to refer to column names as if they are variables that live inside your environment, is called **data masking**.
+
+In the function we defined above, the `col_name` inside `summarize()` function is first interpreted as a data-variable, and the function looks for the `col_name` column inside the data set, which doesn't exist. Then it checks what `col_name` represents as an environment variable. We passed `"body_mass_g"`, which is a string to `col_name`, but taking a mean of a string doesn't make sense!
+
+What we would like to do is use `col_name` as a placeholder for data-variable. Then we can pass whatever column name to the function.
+
+To be able to pass column names of your data as arguments, we need to use a framework that was introduced in the `{tidyverse}`, called *tidy evaluation*. This framework can be used by installing the `{rlang}` package version 0.4.0 or higher.
+
+Let's rewrite the function from before with **curly curly** syntax (this is also referred to as **embracing** in tidyverse:
+
+```{r}
+# function using tidyeval
+simple_function <- function(dataset, col_name) {
+  
+  dataset %>% 
+    summarize(mean = mean({{ col_name }}, na.rm=TRUE)) # "embrace" the argument
+}
+
+# call tidyeval function
+print(simple_function(penguins, body_mass_g))
+print(mean(penguins$body_mass_g, na.rm = TRUE))
+
+# call tidyeval function
+print(simple_function(penguins, bill_length_mm ))
+print(mean(penguins$bill_length_mm , na.rm = TRUE))
+```
+
+Let's see another example:
+
+```{r}
+simple_function <- function(dataset, filter_col, mean_col, value) {
+  
+  dataset %>% 
+    filter( {{ filter_col }} == value) %>% 
+    summarize(mean = mean( {{ mean_col }} , na.rm=TRUE))
+}
+
+# mean of body mass for females
+simple_function(penguins, sex, body_mass_g, "female")
+
+# mean of body mass for Adelie species
+simple_function(penguins, species, body_mass_g, "Adelie")
+```
+
+Say you want to make the function generate more readable output, it would be easier to name the summary column similar to the input data column. Let's try that:
+
+```{r, eval=FALSE, error=TRUE}
+simple_function <- function(dataset, filter_col, mean_col, value) {
+  
+  dataset %>% 
+    filter( {{ filter_col }} == value) %>% 
+    summarize( {{ mean_col }} = mean( {{mean_col}} , na.rm=TRUE)) # assign summary column name with =
+}
+
+simple_function(penguins, sex, body_mass_g, "female")
+```
+
+This throws an error! In this case, you have to use the `:=` operator instead of `=` to be able to assign the column name to the new column which stores the summary statistic.
+
+```{r}
+simple_function <- function(dataset, filter_col, mean_col, value) {
+  
+  dataset %>% 
+    filter( {{ filter_col }} == value) %>% 
+    summarize( {{ mean_col }} := mean( {{ mean_col }} , na.rm=TRUE)) # assign summary column name with :=
+}
+
+simple_function(penguins, sex, body_mass_g, "female")
+simple_function(penguins, sex, bill_length_mm, "female")
+```
+
+If you're creating new columns names with dplyr verbs, you can also enclose the data-variables inside quotation marks, which lets you programmatically generate names.
+
+```{r}
+simple_function <- function(dataset, filter_col, mean_col, value) {
+  
+  dataset %>% 
+    filter( {{ filter_col }} == value) %>% 
+    summarize(
+      "{{ mean_col }}_mean" := mean( {{ mean_col }} , na.rm=TRUE),
+      "{{ mean_col }}_sd" := sd({{ mean_col }}, na.rm=TRUE)
+    ) # assign summary column name with :=
+}
+
+simple_function(penguins, sex, body_mass_g, "female")
+simple_function(penguins, sex, bill_length_mm, "female")
+```
+
+### EXERCISE 6
+
+Load the starwars dataset with `data(starwars)` for this exercise.
+
+```{r}
+data(starwars)
+View(starwars)
+names(starwars)
+```
+
+Write a function `how_many_na` which counts the number of missing values for a given column of the dataset. Using this function, find the number of missing values for `hair_color` and `birth_year` in `starwars`
+
+```{r}
+how_many_na <- function(data, column) {
+  data %>% 
+    filter(is.na({{ column }})) %>% 
+    nrow()
+}
+
+how_many_na(starwars, hair_color)
+```
+
+### EXERCISE 7
+
+Write a function `sorted_mean_mass` to calculate the average `mass` grouped by any categorical column of choice (e.g. `homeworld`, `species`), and arrange the results from lightest to heaviest.
+
+The function should accept two arguments: dataset and grouping column.
+
+Hint: First write out the tidyverse commands as you would normally, then convert it to a function.
+
+```{r}
+sorted_mean_mass <- function(data, grouping_col) {
+  data %>% 
+    group_by({{ grouping_col }}) %>% 
+    summarise(mean = mean(mass, na.rm = TRUE)) %>% 
+    arrange(mean)
+}
+
+sorted_mean_mass(starwars, homeworld)
+```
+
+### EXERCISE 8
+
+Write a function `sorted_mean_col` to calculate the average of *any* numeric column grouped by any categorical column, and arrange the results from lowest to highest. Name the summary statistic column the same as the input column.
+
+Bonus: Have the function also calculate the median and have the column names in the summarized output include the input variable name.
+
+```{r}
+sorted_mean_col <- function(data, averaging_col, grouping_col) {
+  
+  data %>% 
+      group_by({{ grouping_col }}) %>% 
+      summarize( {{ averaging_col }} := mean({{ averaging_col }}, na.rm = TRUE)) %>% 
+      arrange({{averaging_col}})
+}
+
+sorted_mean_col(starwars, mass, homeworld)
+```
+
+```{r}
+sorted_mean_col <- function(data, averaging_col, grouping_col) {
+  
+  data %>% 
+      group_by({{ grouping_col }}) %>% 
+      summarize(
+        "{{ averaging_col }}_mean" := mean({{ averaging_col }}, na.rm = TRUE),
+        "{{ averaging_col }}_median" := median({{ averaging_col }}, na.rm = TRUE)
+      ) %>% 
+      arrange({{averaging_col}})
+}
+
+sorted_mean_col(starwars, mass, homeworld)
+```
+
+### Practical example for `{{}}`
+
+A very useful application for `{{}}` is for making plot templates. Like `dplyr` verbs, `ggplot2` also uses data masking inside the `aes()` part.
+
+```{r}
+# plot code
+penguins %>% 
+  ggplot(aes(x = flipper_length_mm, y = body_mass_g, group = species)) +
+  geom_point(aes(color = species), size=2, alpha=0.8) +
+  geom_smooth(aes(color = species, fill = species), method="lm", alpha =0.1) +
+  theme_classic() +
+  labs(title = "Penguins Data Scatterplot")
+```
+
+Let's make this into a function:
+
+```{r}
+# functionalized plot code
+scatterplot_with_lm <- function(data, x_col, y_col, grouping_var, title) {
+  data %>% 
+    ggplot(aes(x = {{ x_col }}, y = {{ y_col }}, group = {{ grouping_var }})) +
+    geom_point(aes(color = {{ grouping_var }}), size=2, alpha=0.8) +
+    geom_smooth(aes(color = {{ grouping_var }}, fill = {{ grouping_var }}), 
+                method="lm", alpha =0.1) +
+    theme_classic() + labs(title = title)
+}
+```
+
+Call this function several times to make different plots
+
+```{r}
+# call on penguins data
+scatterplot_with_lm(penguins, flipper_length_mm, body_mass_g, species, "penguins Data")
+scatterplot_with_lm(penguins, bill_length_mm, body_mass_g, species, "penguins Data")
+scatterplot_with_lm(penguins, bill_depth_mm, body_mass_g, species, "penguins Data")
+
+# call on a different dataset
+scatterplot_with_lm(mtcars, wt, mpg, gear, "mtcars Data")
+scatterplot_with_lm(mtcars, wt, mpg, factor(gear), "mtcars Data")
+```
+
+### EXERCISE 9
+
+Load the `{babynames}` package as below:
+
+```{r}
+library(babynames)
+print(head(babynames))
+```
+
+```{r}
+# plot the popularity of a name across time
+chosen_name = "Tyler"
+babynames %>% 
+  filter(name == chosen_name) %>% 
+  ggplot(aes(x=year, y=prop)) + 
+  geom_col(color="orange", fill="orange", alpha=0.5) + theme_classic()
+```
+
+Rewrite the plotting code above as a function that can take any data set similar to `babynames` and plot the popularity measure (as either the `prop` or `n` for example) over time for the variable `chosen_name`. Call the function `name_popularity_plotter`.
+
+```{r}
+name_popularity_plotter <- function(data, chosen_name, name_col, pop_col, time_col){
+  data %>% 
+    filter({{ name_col }} == chosen_name) %>% 
+    ggplot(aes(x={{ time_col }}, y={{ pop_col }})) + 
+    geom_col(color="orange", fill="orange", alpha=0.5) + theme_classic() +
+    labs(title = chosen_name)
+}
+
+name_popularity_plotter(babynames, "John", name, prop, year)
+name_popularity_plotter(babynames, "John", name, n, year)
+```
