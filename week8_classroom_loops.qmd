@@ -1,0 +1,121 @@
+---
+output:
+  html_document:
+    df_print: paged
+    code_download: TRUE
+    toc: true
+    toc_depth: 1
+project:
+  execute-dir: project
+editor_options:
+  chunk_output_type: console
+---
+
+## Loops in R
+
+A `for` loop is a control flow statement that allows you to repeat a block of code multiple times. In R, the syntax for a `for` loop is:
+
+```         
+for (variable in sequence)
+  { \# Code to execute }
+```
+
+-   `variable`: The variable that takes the value of each element in the sequence.
+
+-   `sequence`: A set of values (a vector, list, or range of numbers).
+
+Loops help to keep your code compact and follow the DRY (Don't Repeat Yourself) principle of writing clean code.
+
+Let\'s start with a simple example: a loop that prints numbers from 1 to 5.
+
+```{r}
+for (i in 1:5) {
+  print(i)
+}
+```
+
+-   `1:5` creates a sequence of numbers from 1 to 5.
+
+-   `i` will take each value in this sequence one by one and execute the `print(i)` statement.
+
+### Conditional statements within a for loop
+
+In biostatistics, sometimes we need to perform different operations based on conditions. For example, we might want to classify values into categories (e.g., high vs. low risk) based on a threshold.
+
+```{r}
+# Create a vector of risk scores
+risk_scores <- c(30, 45, 60, 20, 55)
+
+# Empty vector to store categories
+categories <- character(length(risk_scores))
+
+# Loop through risk scores and categorize
+for (i in 1:length(risk_scores)) {
+  if (risk_scores[i] > 50) {
+    categories[i] <- "High Risk"
+  } else {
+    categories[i] <- "Low Risk"
+  }
+}
+
+# Print the categories
+print(categories)
+```
+
+The loop checks each `risk_scores` value and assigns it to the appropriate category based on whether it\'s above or below 50.
+
+### Practical Example
+
+Let's work with the penguins data from the palmerpenguins package.
+
+Say we want to test which among the three penguin species has the highest $R^2$ value for predicting body mass from flipper length?
+
+We would have to run a linear regression for all three species separately, then find the $R^2$ value to find which of the three is highest.
+
+Let's see how to do this for one species:
+
+```{r}
+library(palmerpenguins)
+
+# build a linear regression model for one species
+
+species = "Gentoo" # choose a species
+formula <- body_mass_g ~ flipper_length_mm
+data <- penguins[penguins$species == species, ]
+
+model <- lm(formula, data)
+r_squared <- summary(model)$r.squared # extract the R2 value
+print(r_squared)
+
+```
+
+Now let's see how we could use loops to run this code chunk for all three species.
+
+What is the loop sequence in this example?
+
+What would be the loop variable?
+
+```{r}
+# sequence
+species_list <- levels(penguins$species)
+species_list
+
+# formula
+formula <- body_mass_g ~ flipper_length_mm
+
+for (species in species_list) {
+  # build the model
+  data <- penguins[penguins$species == species, ]
+  model <- lm(formula, data)
+  
+  # extract the r2 from the model
+  r_squared <- summary(model)$r.squared
+  r_squared <- round(r_squared, digits=3) # round to format the output text
+  
+  # create text output to print
+  text <- paste(species, as.character(r_squared), sep=" - ")
+  
+  # print
+  print(text)
+}
+```
