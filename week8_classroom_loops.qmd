@@ -26,7 +26,7 @@ for (variable in sequence)
 
 Loops help to keep your code compact and follow the DRY (Don't Repeat Yourself) principle of writing clean code.
 
-Let\'s start with a simple example: a loop that prints numbers from 1 to 5.
+Let's start with a simple example: a loop that prints numbers from 1 to 5.
 
 ```{r}
 for (i in 1:5) {
@@ -62,7 +62,7 @@ for (i in 1:length(risk_scores)) {
 print(categories)
 ```
 
-The loop checks each `risk_scores` value and assigns it to the appropriate category based on whether it\'s above or below 50.
+The loop checks each `risk_scores` value and assigns it to the appropriate category based on whether it's above or below 50.
 
 ### Practical Example
 
