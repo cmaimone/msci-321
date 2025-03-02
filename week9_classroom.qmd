@@ -53,9 +53,9 @@ The syntax for constructing ggplots could be puzzling if you are a beginner or w
 
 -   The order of the layers matters, the first command/layer is executed first, and so on. Sometimes, this can make a difference in your final plot.
 
-Let's initialize a basic ggplot.  We're going to use data from stress echocardiograms.  Details here: https://hbiostat.org/data/repo/stressecho
+Let's initialize a basic ggplot. We're going to use data from stress echocardiograms. Details here: https://hbiostat.org/data/repo/stressecho
 
-We can read the data from the URL where it's posted: 
+We can read the data from the URL where it's posted:
 
 ```{r}
 # Setup
@@ -65,7 +65,7 @@ View(stress)
 
 There's a list of variables on the dataset description page: https://hbiostat.org/data/repo/stressecho
 
-We'll build up a plot step by step.  First, we initialize a plot:
+We'll build up a plot step by step. First, we initialize a plot:
 
 ```{r}
 ggplot(stress) # Initialize a plot by calling the ggplot() function
@@ -75,7 +75,7 @@ A blank ggplot is drawn. ggplot knows we want a plot with a given data set!
 
 ![](https://miro.medium.com/v2/resize:fit:2000/format:webp/1*mcLnnVdHNg-ikDbHJfHDNA.png){width="665"}
 
-Now we specify which variables we're using.  `bhr` is basal heart rate and `basebp` is basal blood pressure.
+Now we specify which variables we're using. `bhr` is basal heart rate and `basebp` is basal blood pressure.
 
 ```{r}
 ggplot(stress) + # Initialize a plot by calling the ggplot() function
@@ -131,9 +131,9 @@ ggplot(stress) +
   geom_boxplot() 
 ```
 
-ggplot2 is giving us a warning here.  This is because it expects certain types of variables (continuous vs. discrete) for different types of plots.  Here, we got a single box plot.  But we wanted one for each category of hxofHT.  We need to make hxofHT first.  
+ggplot2 is giving us a warning here. This is because it expects certain types of variables (continuous vs. discrete) for different types of plots. Here, we got a single box plot. But we wanted one for each category of hxofHT. We need to make hxofHT first.
 
-We could just change it in the data frame, or we can do it temporarily with dplyr.  We're going to use it regularly, and we'd like clear labels for the variable, so let's clean it up first:
+We could just change it in the data frame, or we can do it temporarily with dplyr. We're going to use it regularly, and we'd like clear labels for the variable, so let's clean it up first:
 
 ```{r}
 table(stress$hxofHT)  # 0s and 1s
@@ -182,16 +182,15 @@ The line of best fit is in blue. Can you find out what other `method` options ar
 
 ## EXERCISE
 
-Add a linear fit line to the heart rate plot from the previous exercise 
+Add a linear fit line to the heart rate plot from the previous exercise
 
 ```{r}
 
 ```
 
-
 # Adjusting the X and Y axis limits
 
-In our previous plot, even though both variables are blood pressure readings, the axis limits are different because of where the data is.  We may want to set the range of each axis to be the same to make it clearer that max blood pressure readings are higher than baseline readings.  
+In our previous plot, even though both variables are blood pressure readings, the axis limits are different because of where the data is. We may want to set the range of each axis to be the same to make it clearer that max blood pressure readings are higher than baseline readings.
 
 The X and Y axis limits can be controlled in 3 ways.
 
@@ -217,9 +216,9 @@ ggplot(stress, aes(x=basebp, y=mbp)) +
   ylim(c(75, 250))   
 ```
 
-ggplot2 warns us that points were removed.  
+ggplot2 warns us that points were removed.
 
-The fact that the points were removed is most notable because it affects the computation of the smoothing line we added.  
+The fact that the points were removed is most notable because it affects the computation of the smoothing line we added.
 
 ## **Method 2**: Using the scales layer
 
@@ -251,9 +250,9 @@ ggplot(stress, aes(x=basebp, y=mbp)) +
   geom_smooth(method="lm")
 ```
 
-Notice that, similarly to method 1, this method deletes the points outside of the range.  The xlim and ylim functions are shorthand for using the scales functions.
+Notice that, similarly to method 1, this method deletes the points outside of the range. The xlim and ylim functions are shorthand for using the scales functions.
 
-The scale functions have the form: scale_[aesthetic]_[type of scale].
+The scale functions have the form: scale\_\[aesthetic\]\_\[type of scale\].
 
 Here, both variables are continuous variables, so we use continuous scales.
 
@@ -273,18 +272,17 @@ ggplot(stress, aes(x=basebp, y=mbp)) +
                   ylim=c(80, 200))  # zooms in
 ```
 
-Since all points were considered, this method doesn't affect the fitted line.  
+Since all points were considered, this method doesn't affect the fitted line.
 
-Note another difference: the partially displayed points at the upper edge of the plot.  These don't appear when we use xlim/ylim or scale functions because those points are completely removed, instead of just zooming in on the relevant plot region.
+Note another difference: the partially displayed points at the upper edge of the plot. These don't appear when we use xlim/ylim or scale functions because those points are completely removed, instead of just zooming in on the relevant plot region.
 
 ## EXERCISE
 
-Plot age vs. basal heart rate (bhr).  Change the axis limits to exclude the outlier.  Use any method above.
+Plot age vs. basal heart rate (bhr). Change the axis limits to exclude the outlier. Use any method above.
 
 ```{r}
 
 ```
-
 
 # Changing Color and Size of Data Representations
 
@@ -332,13 +330,13 @@ ggplot(stress, aes(age)) +
   geom_histogram(col="#FF3333", fill="#3333ff")
 ```
 
-Or other methods, like RGB values 
+Or other methods, like RGB values
 
 ## EXERCISE
 
 Change the color and size of the points in the plot below.
 
-Challenge: Change the point shape to one with both an outline and a fill and set both colors.  This site might help: https://blog.albertkuo.me/post/point-shape-options-in-ggplot/
+Challenge: Change the point shape to one with both an outline and a fill and set both colors. This site might help: https://blog.albertkuo.me/post/point-shape-options-in-ggplot/
 
 ```{r}
 ggplot(stress, aes(age, maxhr)) + 
@@ -358,7 +356,7 @@ Now each point is colored based on the `age` of the participant. Not just color,
 
 As an added benefit, the legend is added automatically. If needed, it can be removed by setting the `legend.position` to `None` from within a `theme()` function. We'll talk about themes later.
 
-This is a really convenient way to explore groups in your data.  Remember the penguins?
+This is a really convenient way to explore groups in your data. Remember the penguins?
 
 ```{r}
 library(palmerpenguins)
@@ -367,7 +365,7 @@ ggplot(penguins, aes(bill_length_mm, bill_depth_mm, color=species)) +
   geom_point()
 ```
 
-Why the message about data being removed?  We didn't change the axes ranges...  This is because there are missing values in this dataset. 
+Why the message about data being removed? We didn't change the axes ranges... This is because there are missing values in this dataset.
 
 ## EXERCISE
 
@@ -377,7 +375,6 @@ Change the plot below to color by hxofHT (history of hypertension)
 ggplot(stress, aes(x=basebp, y=mbp)) + 
   geom_point()
 ```
-
 
 ## Scales for color
 
@@ -409,7 +406,6 @@ ggplot(stress, aes(x=basebp, y=mbp, color=hxofHT)) +
   scale_color_discrete()
 ```
 
-
 You can change the color palette entirely using a different color scale:
 
 ```{r}
@@ -424,25 +420,23 @@ ggplot(stress, aes(x=basebp, y=mbp, color=hxofHT)) +
   scale_color_manual(values=c("red", "blue"))
 ```
 
-There are many ways to control the color scales.  For some examples, see: https://ggplot2-book.org/scales-colour for the basics, or many online tutorials for other options.  The [`{ggsci}`](https://cran.r-project.org/web/packages/ggsci/vignettes/ggsci.html) package offers a collection of high-quality color palettes inspired by colors used in scientific journals, data visualization libraries, science fiction movies, and TV shows. 
+There are many ways to control the color scales. For some examples, see: https://ggplot2-book.org/scales-colour for the basics, or many online tutorials for other options. The [`{ggsci}`](https://cran.r-project.org/web/packages/ggsci/vignettes/ggsci.html) package offers a collection of high-quality color palettes inspired by colors used in scientific journals, data visualization libraries, science fiction movies, and TV shows.
 
 When selecting colors for your visualizations, in addition to other factors, it's important to consider [friendly colors for people with color vision deficiency](https://www.tableau.com/blog/examining-data-viz-rules-dont-use-red-green-together).
 
 ## EXERCISE
 
-Make a scatterplot of heart rate vs. blood pressure, with the points colored by gender.  
+Make a scatterplot of heart rate vs. blood pressure, with the points colored by gender.
 
-Note: you'll need to make the gender variable a factor first, like we did with hxofHT above.  Why?  Because otherwise it will treat it as a continuous variable instead of a discrete one, and use the wrong type of color scale.
+Note: you'll need to make the gender variable a factor first, like we did with hxofHT above. Why? Because otherwise it will treat it as a continuous variable instead of a discrete one, and use the wrong type of color scale.
 
 ```{r}
 
 ```
 
-
-
 # Change the Title and Axis Labels
 
-Let's work on adding and changing labels.  There are a few options
+Let's work on adding and changing labels. There are a few options
 
 ```{r}
 ggplot(stress, aes(x=basebp, y=mbp)) + 
@@ -489,20 +483,17 @@ ggplot(stress, aes(x=basebp, y=mbp, color=age)) +
   scale_color_continuous(name="Age")
 ```
 
-
-
 ## EXERCISE
 
-Add suitable axis labels and titles to the plot below.  baseEF = baseline cardiac ejection fraction (a measure of the heart's pumping efficiency).
+Add suitable axis labels and titles to the plot below. baseEF = baseline cardiac ejection fraction (a measure of the heart's pumping efficiency).
 
-Also experiment with the number of bins for the histogram.  Use the bins parameter for geom_histogram, or experiment with the binwidth and center parameters.
+Also experiment with the number of bins for the histogram. Use the bins parameter for geom_histogram, or experiment with the binwidth and center parameters.
 
 ```{r}
 ggplot(stress, aes(baseEF)) + 
   geom_histogram() 
   
 ```
-
 
 # Themes
 
@@ -549,7 +540,6 @@ ggplot(stress, aes(x=basebp, y=mbp, color=age)) +
   theme(panel.grid = element_blank()) # controlling specific elements
 ```
 
-
 `theme_pubr()` from the `{ggpubr}` package is a nice option:
 
 ```{r}
@@ -569,7 +559,7 @@ ggplot(stress, aes(x=basebp, y=mbp, color=age)) +
 
 Themes can be [customized](https://rpubs.com/mclaire19/ggplot2-custom-themes) to every detail - the [possibilities](https://ggplot2.tidyverse.org/reference/theme.html) are endless!
 
-The most common thing to change with themes is probably the background grid lines.  There are major and minor grid lines on both axes.  
+The most common thing to change with themes is probably the background grid lines. There are major and minor grid lines on both axes.
 
 ```{r}
 ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
@@ -583,11 +573,9 @@ ggplot(stress, aes(x=basebp, y=mbp, color=age)) +
         panel.grid.major.x = element_line(color="blue")) # element_line controls their appearance
 ```
 
-
-
 ## Fonts
 
-Themes are extremely versatile. For example, you change the axis font styles using custom inputs.  element_text() function controls test, like element_line() controls line options.
+Themes are extremely versatile. For example, you change the axis font styles using custom inputs. element_text() function controls test, like element_line() controls line options.
 
 ```{r}
 ggplot(stress, aes(x=basebp, y=mbp, color=age)) + 
@@ -615,7 +603,7 @@ ggplot(stress, aes(x=basebp, y=mbp, color=age)) +
 
 ## EXERCISE
 
-We don't want vertical grid lines on bar plots.  Remove them from the plot below, as well as removing the gray background.  
+We don't want vertical grid lines on bar plots. Remove them from the plot below, as well as removing the gray background.
 
 ```{r, eval=FALSE}
 ggplot(stress, aes(gender, fill=gender)) +
@@ -625,7 +613,7 @@ ggplot(stress, aes(gender, fill=gender)) +
 
 # Separating by Facets
 
-We saw one way to examine groups in our data: by coloring data by a grouping variable.  Another option is to make the same plot multiple times, once for each group.  ggplot2 has a way to do this easily.
+We saw one way to examine groups in our data: by coloring data by a grouping variable. Another option is to make the same plot multiple times, once for each group. ggplot2 has a way to do this easily.
 
 ```{r}
 ggplot(stress, aes(x=basebp, y=mbp)) + 
@@ -640,10 +628,9 @@ ggplot(stress, aes(x=basebp, y=mbp, color=age)) +
   facet_grid( ~ hxofHT)  
 ```
 
-
 ## EXERCISE
 
-Make any plot from the stress data - facet the plot by gender.  
+Make any plot from the stress data - facet the plot by gender.
 
 ```{r}
 
@@ -675,10 +662,9 @@ ggsave("my_beautiful_plot.pdf",
        width = 6)
 ```
 
-
 # Bonus 2: Controlling the order and labels of categories
 
-When making a bar plot or other plot with a discrete variable, you control the order in which the categories appear by the order of the levels of the factor variable you're using.  Even if you haven't explicitly made a variable a factor, it will be automatically converted during the process of making a plot.  So you can control the categories by explicitly making the factor the way you want.  
+When making a bar plot or other plot with a discrete variable, you control the order in which the categories appear by the order of the levels of the factor variable you're using. Even if you haven't explicitly made a variable a factor, it will be automatically converted during the process of making a plot. So you can control the categories by explicitly making the factor the way you want.
 
 The forcats package has useful helper functions.
 
@@ -724,7 +710,6 @@ stress %>%
   ggplot(aes(x=location, y=mean_bp)) +
   geom_bar(stat="identity")  
 ```
-
 
 Set the bars in a specified order:
 
