@@ -1,0 +1,636 @@
+---
+title: "Week 7"
+format:
+  html:
+    embed-resources: true
+editor_options: 
+  chunk_output_type: console
+---
+
+# Setup
+
+```{r}
+library(tidyverse)
+```
+
+We'll use data from the [National Health and Nutrition Examination Survey](https://wwwn.cdc.gov/nchs/nhanes/).  We're ignoring study weights that would make this data representative of the population.
+
+Some variables:
+
+* **id**: unique ID for the participant
+* **survey_year**: 2 different survey years: "2009_10" "2011_12"
+* **gender**: male or female
+* **age**: age in years (integer values)
+* **age_decade**: categorical age grouping
+* **education**: education level completed, text values
+* **marital_status**: marital status, text values
+* **work_status**: work status, text values
+* **income_poverty_ratio**: ratio of participant income to the poverty line
+* **weight**: weight in kg
+* **height**: height in cm
+* **pulse**: heart beats per minute 
+* **bp_sys1**: first systolic (top) blood pressure measure
+* **bp_dia1**: first diastolic (bottom) blood pressure measure
+* **bp_sys2**: second systolic (top) blood pressure measure
+* **bp_dia2**: second diastolic (bottom) blood pressure measure
+* **bp_sys3**: third systolic (top) blood pressure measure
+* **bp_dia3**: third diastolic (bottom) blood pressure measure
+* **cholesterol**: total cholesterol, in millimoles per liter (mmol/L); multiply by 38.67 to convert to US measure in mg/dL
+* **health_level**: participant-reported overall health level, categorical
+* **sleep_hours**: number of hours of sleep per weeknight, integer values
+* **sleep_trouble**: binary indicator of whether participant has sleep problems (Yes/No)
+* **physically_active**: binary indicator of whether participant participates in at least moderate physical activities (Yes/No)
+
+
+```{r}
+healthdata <- read_csv("data/nhanes.csv")
+```
+
+
+
+# R Probability Distribution Functions
+
+Sometimes we need to work with theoretical statistical distributions.  R has functions to get information about many common distributions.  For each distribution, there are 4 functions.  For the normal distribution, for example, there are:
+
+* pnorm(x): what proportion of the distribution is below the value x.  This is used to compute the p-value for a statistic that follows the normal distribution.
+* qnorm(x): the reverse of pnorm(): what value of the distribution corresponds to the x quantile or probability.
+* dnorm(x): what is the value of the pdf function for the distribution at the given x value.  This is function is mostly commonly used to visualize the distribution.
+* rnorm(n): return n random values drawn from the distribution 
+
+All of the above functions default to a normal distribution with a mean of 0 and a sd (standard deviation) of 1.  These values can be changed however.
+
+Examples:
+
+```{r}
+pnorm(0)    # .5 because 0 is the median of the distribution
+qnorm(.5)   # 0 because half of the distribution is to the left of 0
+qnorm(.025) # -1.96
+qnorm(.975) # 1.96 
+rnorm(3)
+```
+
+Draw the normal distribution
+
+```{r}
+plot(dnorm(seq(-3, 3, .1)) ~ seq(-3, 3, .1), type="l")
+```
+
+As an example use case, say we have an individual observation that is 1.6 standard deviations above the mean for the variable with a normal distribution.  How extreme is this value?  What proportion of the distribution is to the left of this value?
+
+```{r}
+pnorm(1.6)
+```
+
+Similar functions exist for the uniform (`punif()`, `runif()`, etc.), exponential, binomial, and many other distributions.  Use the command `?Distributions` to pull up the documentation page listing distributions.
+
+
+# Random Sampling
+
+We can sample from theoretical distributions with functions like `rnorm()`
+
+```{r}
+rnorm(500) %>%
+  hist(breaks=seq(-4.55, 4.55, by=.1), # to keep histogram bins stable
+       freq=FALSE, # plot density, not count, so we can use dnorm below
+       xlim=c(-4.25, 4.25), ylim=c(0,.6)) # to keep the histogram stable
+lines(dnorm(seq(-3, 3, .1)) ~ seq(-3, 3, .1), type="l")
+```
+
+We can also sample values from a predefined set of values, either with or without replacing those values:
+
+```{r}
+letters
+sample(letters, 10) %>% sort()
+sample(letters, 10, replace=TRUE) %>% sort()
+
+sample(c("heads", "tails"), 10, replace=TRUE)
+```
+
+dplyr also includes a way to sample rows of a data frame (has options for with or without replacement too):
+
+```{r}
+healthdata %>%
+  slice_sample(n=20)
+```
+
+
+## Random Seed
+
+Anything "random" in a computer is not actually random.  There are pseudo random number generators that, given a starting value or "seed", will always produce the same sequence of values.  If we don't set a seed, R uses a combination of the current time and the ID for the R process on your computer.  
+
+To be able to reproduce results, we can set a seed explicitly:
+
+```{r}
+set.seed(48392)
+sample(letters, 10) %>% sort()
+```
+
+
+## TRY IT
+
+Take a random sample of 10 values from a uniform distribution from 0 to 1.  (Or look up the help page to see how to sample from a uniform distribution between 0 and 5)
+
+Sample 10 random ages from the healthdata.
+
+```{r}
+
+```
+
+
+
+# Sample Means
+
+In rare cases, we might actually have observations from a complete population of interest -- data from every single member of that population class.  But most of the time we have samples.  
+
+When computing various values with that sample, there will be uncertainty and error in it.
+
+Take 100 samples of size 50 from a normal distribution, and compute the mean of each sample.  Plot those means (which should be 0, given the "population" of a standard normal distribution):
+
+```{r}
+means <- map_vec(1:100, \(x) mean(rnorm(50))) 
+means %>% 
+  hist(breaks=seq(-.6, .6, by=.05))
+```
+
+This looks like it's probably normal, but note the range of values on the x-axis -- the range is much smaller than for a standard normal distribution with standard deviation 1.  The standard deviation here is:
+
+```{r}
+mean(means)
+sd(means)
+```
+
+This is approximately the standard deviation of the population (which is 1), divided by the square root of the sample size (square root of 50 is about 7.1).  If we increased the number of samples, the numbers will get closer.
+
+```{r}
+1/sqrt(50)
+```
+
+This variation in the sample means is the **standard error of the mean**.  It is the standard deviation of the population (which is often not actually known), divided by the square root of the sample size.  It's the standard deviation in the distribution of the mean of samples of the same size, if you took many samples of the same size from the same population. 
+
+On average, the mean of any given sample is 0, which is the same as the population.  But the actual sample mean will vary according to a normal distribution with mean = population mean and standard deviation = population standard deviation/square root of the sample size.
+
+## Central Limit Theorem
+
+The sample mean will have a normal distribution (mean = population mean and standard deviation = population standard deviation/square root of the sample size) **regardless of the distribution of the population.**  This is the Central Limit Theorem.
+
+Above, we took samples from a normal distribution.  Let's instead sample from an exponential distribution:
+
+```{r}
+plot(dexp(seq(0,4, .1)) ~ seq(0, 4, .1), type="l")
+```
+
+The above distribution has mean 1 and sd 1.
+
+```{r}
+hist(rexp(500), breaks=seq(0,8,.05))
+```
+
+
+```{r}
+means <- map_vec(1:1000, \(x) mean(rexp(50))) 
+means %>% 
+  hist(breaks=seq(0.025, 2, by=.05))
+mean(means)
+sd(means)
+```
+
+From a uniform distribution (ranging 0 to 1, mean .5, sd 0.288):
+
+```{r}
+means <- map_vec(1:1000, \(x) mean(runif(50))) 
+means %>% 
+  hist(breaks=seq(0.2125, .8, by=.025))
+mean(means)
+sd(means)
+
+(1/sqrt(12))/sqrt(50)
+```
+
+
+## Confidence Intervals
+
+In practice, we don't have many different samples from our population.  We just have one sample.  But we still want to know the population mean.  The sample mean is still our best estimate of the population mean, but we want to know how much confidence we should have in the estimate (since we know there's uncertainty from sampling).
+
+If we don't have the population mean, we also don't have the population standard deviation to compute the standard error on the mean.  We use the standard deviation of the sample instead as the best available information we have.  
+
+```{r}
+set.seed(93487)
+# sample of 100 from a normal population with mean 3 and standard deviation 2
+my_sample <- rnorm(100, mean = 3, sd = 2)
+
+# sample properties
+mean(my_sample)
+sd(my_sample)
+```
+
+The sample mean and sd are close to the true population values, but not exact.
+
+With the information we have, this is our estimate for the distribution of the sample mean:
+
+```{r}
+plot(dnorm(seq(2, 4, .01), mean = mean(my_sample), sd = sd(my_sample)/sqrt(100)) ~ seq(2, 4, .01), 
+     type="l",
+     main = "Distribution of the Sample Mean")
+abline(v=mean(my_sample), col = "red")
+```
+
+For a normal distribution, 95% of the values fall within +/- 1.96 standard deviations from the mean.  We use that to compute a 95% confidence interval around the mean.
+
+```{r}
+# qnorm(.975) is approximately 1.96
+interval <- qnorm(.975) * sd(my_sample)/sqrt(100)
+
+mean(my_sample) - interval
+mean(my_sample) + interval
+
+abline(v=mean(my_sample) - interval, col="green")
+abline(v=mean(my_sample) + interval, col="green")
+```
+
+What does a 95% confidence interval mean?  If we took many, many samples **of the same size** from the population, and computed a 95% confidence interval for the mean of each sample, 95% of those confidence intervals would contain the true population mean.
+
+Why such a convoluted framing?  Can't we say:  There's a 95% chance the interval contains the population mean?  No: the population mean is fixed (no chance or probability).  The interval either does or does not contain the population mean (but we can't know this).  But we do essentially act like this is what is means. 
+
+```{r}
+sample_stats <- data.frame(sample_mean = NULL, sample_sd = NULL)
+for (i in 1:1000) {
+  the_sample <- rnorm(100, mean = 1, sd = 2)
+  sample_stats[i,"sample_mean"] <- mean(the_sample)
+  sample_stats[i, "sample_sd"] <- sd(the_sample)
+}
+sample_stats$sem <- sample_stats$sample_sd/10 # 10 = sqrt(100)
+sample_stats$lower_ci <- sample_stats$sample_mean - qnorm(.975)*sample_stats$sem
+sample_stats$upper_ci <- sample_stats$sample_mean + qnorm(.975)*sample_stats$sem
+sample_stats$id <- 1:1000
+sample_stats$contains_pop_mean <- sample_stats$lower_ci < 1 & sample_stats$upper_ci > 1
+sample_stats
+```
+
+```{r}
+ggplot(sample_stats, aes(y=id, x=lower_ci, xend=upper_ci, color=contains_pop_mean)) +
+  geom_segment() +
+  geom_vline(xintercept = 1)
+```
+
+Arrange the samples by their means:
+
+```{r}
+sample_stats %>%
+  arrange(sample_mean) %>%
+  mutate(id = 1:1000) %>%
+  ggplot(aes(y=id, x=lower_ci, xend=upper_ci, color=contains_pop_mean)) +
+  geom_segment() +
+  geom_vline(xintercept = 1)
+```
+
+```{r}
+sum(!sample_stats$contains_pop_mean)
+```
+
+About 5% of the time, even if we have a perfectly valid random sample from our population, and even if we have a big sample, we'll just randomly get a sample with fairly extreme values, and a 95% CI on the mean will not contain the true population value.
+
+This is why it's important to repeat studies to verify results.
+
+## TRY IT
+
+Compute the mean and a 95% CI on the mean for this sample of heights from the health data participants.
+
+```{r}
+set.seed(4832)
+sample_heights <- sample(healthdata$height, 50)
+
+```
+
+
+
+## Using the t distribution
+
+When we computed the confidence interval, we used the sample standard deviation as an estimate of the population standard deviation.  But especially when we have a small sample size, there's a lot of uncertainty in the sample standard deviation.  So instead of using a normal distribution to compute the confidence interval, we use a t-distribution, which is like a normal, but has more probability in the tails to account for an increased likelihood of extreme values.  The shape of the t-distribution changes with a parameter called degrees of freedom.  
+
+The degrees of freedom parameter corresponds to the sample size - 1.  When the degrees of freedom get above about 30, the t and normal distributions are very similar.
+
+```{r}
+plot(dnorm(seq(-4, 4, .05)) ~ seq(-4, 4, .05), type="l")  # normal
+lines(dt(seq(-4, 4, .05), df=2) ~ seq(-4, 4, .05), col="red") # t
+```
+
+```{r}
+plot(dnorm(seq(-4, 4, .05)) ~ seq(-4, 4, .05), type="l")  # normal
+lines(dt(seq(-4, 4, .05), df=20) ~ seq(-4, 4, .05), col="red") # t
+```
+
+
+```{r}
+plot(dnorm(seq(-4, 4, .05)) ~ seq(-4, 4, .05), type="l")  # normal
+lines(dt(seq(-4, 4, .05), df=30) ~ seq(-4, 4, .05), col="red") # t
+```
+
+It's always OK to use the t-distribution, even if the sample size is larger (it just becomes the normal).
+
+Instead of using 1.96 in calculation for a 95% confidence interval, instead we'd use:
+
+```{r}
+my_small_sample <- rnorm(10)
+
+qt(.975, df=9)
+qnorm(.975)
+
+# with t, interval is larger (more uncertainty)
+mean(my_small_sample) - qt(.975, df=9)*sd(my_small_sample)/sqrt(10)
+mean(my_small_sample) + qt(.975, df=9)*sd(my_small_sample)/sqrt(10)
+
+# than with normal
+mean(my_small_sample) - qnorm(.975)*sd(my_small_sample)/sqrt(10)
+mean(my_small_sample) + qnorm(.975)*sd(my_small_sample)/sqrt(10)
+```
+
+## Confidence Interval Shortcut
+
+In R, there isn't a simple function to just compute the confidence interval on the mean.  But, if we run a t-test (more on this next week), it does compute the mean and a confidence interval for us:
+
+```{r}
+t.test(my_small_sample)
+```
+
+This is testing whether the mean is statistically significantly different from 0.  
+
+We can extract this info from the test result:
+
+```{r}
+t.test(my_small_sample)$conf.int
+t.test(my_small_sample)$conf.int[1]
+t.test(my_small_sample)$conf.int[2]
+t.test(my_small_sample)$estimate  # this is the mean
+```
+
+
+## TRY IT
+
+Use the t.test() function to compute a confidence interval on the mean weight for male participants in the healthdata.
+
+```{r}
+
+```
+
+
+
+# Standardization, Z-scores, Quantiles
+
+While many actual distributions of values are approximately normal, they rarely have mean 0 and standard deviation of 1.  So if you have a patient with a value of 10 in a sample with a mean of 6, it's hard to know how extreme of a value that is.  
+
+To make the values easier to compare and understand, we sometimes standardize them and turn them into Z-scores so they follow a standard normal distribution (mean 0, sd 1) -- because we know in a standard normal distribution, about 1/3 of values fall outside of one standard deviation, and about 5% of observations fall outside 2 standard deviations (1.96) from the mean.  A Z-score tells us how many standard deviations a value is away from the mean. It makes it easier to understand how extreme a value is for a given distribution, and to compare values across distributions.  
+
+```{r}
+sample_bp <- rnorm(25, mean=125, sd=10)
+
+sample_bp
+mean(sample_bp)
+sd(sample_bp)
+hist(sample_bp, breaks=seq(80, 180, 5))
+```
+
+Does the patient with the highest BP really have that extreme of a value?
+
+```{r}
+max(sample_bp)
+(max(sample_bp) - mean(sample_bp))/sd(sample_bp)  # z score - number of SDs away from the mean
+```
+
+
+## Quantiles/Percentiles 
+
+Another useful way to make sense of how extreme a value is in a sample is to look at the percentile or quantile -- what percentage or proportion of observations are less than the given value.  This is often most useful in larger samples.
+
+What percentile is a participant with height 180 cm?
+
+```{r}
+sum(healthdata$height <= 180, na.rm=TRUE)/sum(!is.na(healthdata$height))
+```
+
+87.5% of people in the data have a height less than or equal to 180 cm.
+
+We can also ask the reverse question -- what value are 90% (or some other value) of observations less than?
+
+```{r}
+quantile(healthdata$height, 
+         probs = c(.1, .25, .5, .75, .875, .9),  # multiple percentages
+         na.rm = TRUE)
+```
+
+The quantile function has a few different options on how to compute it, and some interpolate between discrete values when needed.
+
+
+## TRY IT
+
+Using healthdata, what percentile would someone with a cholesterol measure of 6 be?
+
+How high would someone's cholesterol need to be for them to be in the top 5% of values?
+
+```{r}
+
+```
+
+## Interquartile Range
+
+Quartiles (note the "r" in there) refer specifically to the 25% (Q1), 50% (median), 75% (Q3) percentiles.  These are the lines that form the top, middle, and bottom of the box in a boxplot:
+
+```{r}
+boxplot(healthdata$height)
+```
+
+Interquartile range (IQR) is Q3 - Q1.  
+
+```{r}
+IQR(healthdata$height)
+```
+
+Or compute it yourself:
+
+```{r}
+quantile(healthdata$height, .75) - quantile(healthdata$height, .25)
+```
+
+
+
+# Categorical Variables: Frequencies and Proportions
+
+When working with categorical variables, we can't just compute means in the same way.  We are often interested in the proportion of observations that meet different conditions.  
+
+We're worked with tables before.  To review:
+
+## Single Variable
+
+Option 1: Example without any external packages
+
+```{r}
+table(healthdata$gender, useNA = "ifany")
+prop.table(table(healthdata$gender, useNA = "ifany"))
+table(healthdata$gender, useNA = "ifany") / length(healthdata$gender)
+```
+
+Option 2: Example using dplyr functions
+
+```{r}
+healthdata %>%
+  count(gender) %>%
+  mutate(prop = n / sum(n))
+```
+
+Option 3: Other packages; there are a number of useful packages that produce tables with summary statistics. One function that is particularly useful for categorical data is `tabyl()` from the janitor package:
+
+```{r}
+# install.packages("janitor")  # if needed
+library(janitor)
+
+tabyl(healthdata, gender)
+```
+
+## Multiple Variables
+
+We can make frequency tables with multiple variables:
+
+```{r}
+table(healthdata$gender, healthdata$education, useNA = "ifany")
+```
+
+If we want to then compute proportions, we have to decide which proportions we're computing.  In particular, what is the denominator?  Are we computing row proportions?  Column proportions?  Overall proportions?
+
+With the table above, let's compute proportions across education categories within each gender, meaning we want row proportions (proportions in each row total to 1).  We want to group our analysis by gender.
+
+Option 1: Example without any external packages
+
+```{r}
+prop.table(table(healthdata$gender, 
+                 healthdata$education, 
+                 useNA = "ifany"),
+           margin = 1)  # margin: 1 = rows, 2 = columns
+```
+
+Option 2: Example using dplyr functions
+
+Proportions within each gender total to 1.
+
+```{r}
+count(healthdata, gender, education) %>%
+  group_by(gender) %>%
+  mutate(prop = n / sum(n))
+```
+
+We could pivot this result into a different shape table if we wanted.
+
+Option 3: `tabyl()` from janitor
+
+```{r}
+# counts
+tabyl(healthdata, gender, education)
+
+# row proportions
+tabyl(healthdata, gender, education) %>%
+  adorn_percentages(denominator = "row")
+
+# format as %
+tabyl(healthdata, gender, education) %>%
+  adorn_percentages(denominator = "row") %>%
+  adorn_pct_formatting(digits = 0)
+
+# add back in the counts
+tabyl(healthdata, gender, education) %>%
+  adorn_percentages(denominator = "row") %>%
+  adorn_pct_formatting(digits = 0) %>%
+  adorn_ns() 
+```
+
+## TRY IT
+
+Examine education and work_status.  Does the proportion of people out of work vary across education levels?  Hint: proportions for each education level should total 1.
+
+```{r}
+
+```
+
+
+# Practice
+
+Practice computing various statistical summary measures using the healthdata.  
+
+## Exercise 1
+
+Compute the median and average bp_sys1 value per age_decade.
+
+```{r}
+
+```
+
+
+## Exercise 2
+
+Compute the min and max pulse for each gender.
+
+```{r}
+
+```
+
+
+## Exercise 3
+
+Compute the proportion of people with sleep trouble by gender.  
+
+```{r}
+
+```
+
+
+## Exercise 4
+
+Compute the proportion of people who are physically active by whether they have sleep trouble.
+
+```{r}
+
+```
+
+
+## Exercise 5
+
+Compute the mean, and a 95% CI on the mean, of the number of hours people sleep by whether they have sleep trouble.
+
+```{r}
+
+```
+
+
+## Exercise 6
+
+Looking at just female participants, compute the mean and median weight by age decade.
+
+```{r}
+
+```
+
+
+## Exercise 7
+
+Compute the proportion of people in each work_status category by education level.
+
+```{r}
+
+```
+
+
+## Exercise 8
+
+For married men, what weight would put someone in the upper 20% of values?
+
+```{r}
+
+```
+
+
+## Exercise 9
+
+Write an expression to simulate a random roll of a 6-sided die.
+
+```{r}
+
+```
+
+

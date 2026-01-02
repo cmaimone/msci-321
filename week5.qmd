@@ -1,0 +1,890 @@
+---
+title: "Week 5"
+format:
+  html:
+    embed-resources: true
+editor_options: 
+  chunk_output_type: console
+---
+
+# Setup
+
+```{r}
+library(tidyverse)
+library(janitor) # for tables
+library(gt) # for tables
+```
+
+We'll use data from the [National Health and Nutrition Examination Survey](https://wwwn.cdc.gov/nchs/nhanes/).  We're ignoring study weights that would make this data representative of the population.
+
+Some variables:
+
+* **id**: unique ID for the participant
+* **survey_year**: 2 different survey years: "2009_10" "2011_12"
+* **gender**: male or female
+* **age**: age in years (integer values)
+* **age_decade**: categorical age grouping
+* **education**: education level completed, text values
+* **marital_status**: marital status, text values
+* **work_status**: work status, text values
+* **income_poverty_ratio**: ratio of participant income to the poverty line
+* **weight**: weight in kg
+* **height**: height in cm
+* **pulse**: heart beats per minute 
+* **bp_sys1**: first systolic (top) blood pressure measure
+* **bp_dia1**: first diastolic (bottom) blood pressure measure
+* **bp_sys2**: second systolic (top) blood pressure measure
+* **bp_dia2**: second diastolic (bottom) blood pressure measure
+* **bp_sys3**: third systolic (top) blood pressure measure
+* **bp_dia3**: third diastolic (bottom) blood pressure measure
+* **cholesterol**: total cholesterol, in millimoles per liter (mmol/L); multiply by 38.67 to convert to US measure in mg/dL
+* **health_level**: participant-reported overall health level, categorical
+* **sleep_hours**: number of hours of sleep per weeknight, integer values
+* **sleep_trouble**: binary indicator of whether participant has sleep problems (Yes/No)
+* **physically_active**: binary indicator of whether participant participates in at least moderate physical activities (Yes/No)
+
+
+```{r}
+healthdata <- read_csv("data/nhanes.csv")
+```
+
+
+::: callout-tip
+## Online Resources
+
+There are many good online resources that show examples of different types of visualizations and the code to create them.  The R Graph Gallery is one example: https://r-graph-gallery.com/
+:::
+
+Before we start: Why do we need to visualize our data?  Can't we just compute the summary statistics?  These data sets all have the same summary statistics: https://static.scientificamerican.com/sciam/assets/Image/2023/saw0224Math31_d4.png
+
+
+# Visualization with Base R
+
+
+R has several built-in functions for visualizing or plotting data.  These functions generally take *vectors* as input (not data frames).  While you can make publication-quality graphics with the built-in R visualization functions, these functions are most useful for quick, exploratory plots.
+
+
+## Scatterplot
+
+The `plot()` function in R takes two vectors (ideally of continuous data) and makes a scatterplot by default:
+
+```{r}
+plot(healthdata$height, healthdata$weight)
+```
+
+By default, the first variable is x, and the second is y.  We can specify x and y explicitly though instead:
+
+```{r}
+plot(y=healthdata$height, x=healthdata$weight)
+```
+
+
+## Line Plot
+
+Line plots show a trend across values of a variable - most commonly across time, but we don't have a time variable in this data.  We'll compute some values across ages instead first so that we have appropriate data for a line plot:
+
+```{r}
+by_age <- healthdata %>%
+  group_by(age) %>%
+  summarize(avg_pulse = mean(pulse, na.rm=TRUE))
+
+by_age
+```
+
+Now, to plot this, we again use the `plot()` function.  Let's start with a scatterplot:
+
+```{r}
+plot(by_age$age, by_age$avg_pulse)
+```
+
+To convert this to a line plot, we add an input:
+
+```{r}
+plot(by_age$age, by_age$avg_pulse, type="l")
+```
+
+If we want **b**oth points and lines:
+
+```{r}
+plot(by_age$age, by_age$avg_pulse, type="b")
+```
+
+
+## Histogram
+
+Histograms are used to visualize the distribution of a continuous variable.  The function is `hist()`
+
+```{r}
+hist(healthdata$pulse)
+```
+
+You can change the number of bins (bars) with `breaks`
+
+```{r}
+hist(healthdata$pulse, breaks=50)
+```
+
+R doesn't obey `breaks` strictly - think of it as a suggestion. 
+
+
+## Bar Plot
+
+Bar plots are most commonly used to show the number of observations in each category of a categorical variable.  Because of that, to make a bar plot, we first make a frequency table, and then supply that output to the `barplot()` function:
+
+```{r}
+table(healthdata$education)
+
+barplot(table(healthdata$education))
+
+# or, use the pipe!
+table(healthdata$education) |> barplot()
+```
+
+Making bar plots this way can be a bit tricky, because R will only show the category labels that fit on the plot.  Making the plot bigger will provide space for the labels; otherwise you'll need to spend time customizing the layout.
+
+To control the order of the bars, factor the variable you want to visualize first, setting the levels of the factor in the order you want:
+
+```{r}
+healthdata$education <- factor(healthdata$education, 
+                               levels = c("8th Grade", "9 - 11th Grade",
+                               "High School", "Some College", "College Grad"))
+
+table(healthdata$education)
+barplot(table(healthdata$education))
+```
+
+
+## Box Plot
+
+A box plot is a way to summarize the distribution of a continuous variable.  It shows the median, 25th and 75th quantiles (the quartiles) and the range and outliers.  The area in the box is where the middle 50% of the observations are concentrated.  
+
+```{r}
+boxplot(healthdata$height)
+```
+
+Box plots are most useful for comparing the distribution of a variable across groups.  To do this, we need to use a special formula syntax
+
+```{r}
+# variable_of_interest ~ grouping_variable
+boxplot(healthdata$height ~ healthdata$gender)
+```
+
+
+
+## TRY IT
+
+Make a plot of bp_sys1 and bp_sys2.
+
+Make a histogram of income_poverty_ratio.
+
+```{r}
+
+```
+
+## Labels and Title
+
+All of the basic plotting functions (`plot()`, `hist()`, `barplot()`, and `boxplot()`) take the same arguments (inputs) to change the x and y axis labels and add a title:
+
+```{r}
+boxplot(healthdata$height ~ healthdata$gender,
+        main = "This is my title",
+        xlab = "Gender",
+        ylab = "Height (cm)")
+```
+
+
+
+
+# Visualization with ggplot2
+
+ggplot2 is a package that is part of the Tidyverse set of packages.  Like other Tidyverse packages, it expects your data to be in a data frame.  
+
+The code to make very simple plots is a bit more complicated with ggplot2 than with built-in plotting functions, but ggplot2 makes it much easier to make more complex plots and consistently style your plots.
+
+ggplot2 has very intentional design that's based on a theory of how to map data to visual elements (the grammar of graphics - hence the "gg").  There is an entire book about it!  Here, we're just focusing on the basic syntax, not the full design theory of the package.  If you keep learning ggplot2 (which is worth it if you do a lot of data visualization), then we recommend you learn more about why ggplot2 works the way it does.
+
+
+## Basic Syntax
+
+ggplot2 uses multiple functions to build a plot, and they are joined together with `+`.
+
+The basic formula is: 
+
+```{r, eval=FALSE}
+ggplot(dataframe_name, aes(x=variable1_name, y=variable2_name)) +
+  geom_type()
+```
+
+The first line defines what data is being used to make the plot.  The `aes()` function inside `ggplot()` maps variables to elements of the plot, like the x and y axes.
+
+The second line is a function that defines the plot type - there is a different geom (short for geometry) function for each plot type.
+
+Example:
+
+```{r}
+ggplot(healthdata, aes(x=weight, y=height)) +
+  geom_point()
+```
+
+
+## Common Plot Types
+
+Examples of common plot types.
+
+### Scatterplot 
+
+Two continuous variables
+
+```{r}
+ggplot(healthdata, aes(x=weight, y=height)) +
+  geom_point()
+```
+
+The warning message is due to missing values in the variables.
+
+If we don't explicitly label the two variables as the x and y inputs, it assumes x is first and y is second. 
+
+### Line plot 
+
+Line plots show a trend over time or across values.  Since we don't have a time variable, we'll construct some appropriate data for a line plot first:
+
+```{r}
+by_age <- healthdata %>%
+  group_by(age) %>%
+  summarize(avg_pulse = mean(pulse, na.rm=TRUE))
+
+by_age
+```
+
+```{r}
+ggplot(by_age, aes(x=age, y=avg_pulse)) +
+  geom_line()
+```
+
+Combine point and line:
+
+```{r}
+ggplot(by_age, aes(x=age, y=avg_pulse)) +
+  geom_line() +
+  geom_point()
+```
+
+### Histogram
+
+Distribution of a continuous variable
+
+```{r}
+ggplot(healthdata, aes(pulse)) + 
+  geom_histogram()
+```
+
+The warning message is due to missing values in the variables.
+
+Control the number of bins (bars) with the bins argument.  ggplot does strictly obey this setting
+
+```{r}
+ggplot(healthdata, aes(pulse)) + 
+  geom_histogram(bins = 40)
+```
+
+Or the width of the bins:
+
+```{r}
+ggplot(healthdata, aes(pulse)) + 
+  geom_histogram(binwidth = 5)
+```
+
+To center the bins on a specific value, provide what the center of one bin (any bin) should be:
+
+```{r}
+ggplot(healthdata, aes(pulse)) + 
+  geom_histogram(binwidth = 5, center=2.5)
+```
+
+
+
+### Bar Plot
+
+Bar plots are most common for visualizing the frequency of observations across categories (the visual version of a frequency table).  ggplot will compute the number of observations in each category for us.  It will also label each bar, even if the labels overlap.
+
+```{r}
+ggplot(healthdata, aes(education)) +
+  geom_bar()
+```
+
+Or create a horizontal bar chart by specifying that the variable should be on the y-axis:
+
+```{r}
+ggplot(healthdata, aes(y=education)) +
+  geom_bar()
+```
+
+You can control the order of the bars in a bar plot by making the variable a factor before plotting, and setting the levels of the factor in the order you want.  There are helper functions in the forcats package that are particularly useful for creating and ordering factors in ways that are common for visualization, such as ordering categories by their frequency.
+
+
+### Box Plot
+
+Visualizing the distribution of a single variable:
+
+```{r}
+ggplot(healthdata, aes(y=height)) +
+  geom_boxplot()
+```
+
+By group:
+
+```{r}
+ggplot(healthdata, aes(y=height, x=gender)) +
+  geom_boxplot()
+```
+
+
+## TRY IT
+
+Make a plot of bp_sys1 and bp_sys2.
+
+Make a histogram of income_poverty_ratio.
+
+```{r}
+
+```
+
+## Labels and Title
+
+There are a few ways to set the labels and title in ggplot, but a common way is to use the `labs()` (labels) function.  It can be used with any ggplot.
+
+```{r}
+ggplot(healthdata, aes(y=height, x=gender)) +
+  geom_boxplot() + 
+  labs(title = "This is my title",
+       x = "Gender",
+       y = "Height (cm)")
+```
+
+
+## ggplot2: Visualizing Groups
+
+ggplot2 is particularly useful and powerful for visualizing data by groups.  There are two main approaches to support looking at data divided into groups.
+
+### Visual Elements
+
+One way to look at groups is to use color.  With ggplot, we can map a variable (usually a categorical one) to be visually represented by color:
+
+```{r}
+ggplot(healthdata, aes(x=weight, y=height, color=gender)) +
+  geom_point()
+```
+
+It automatically adds a legend explaining the mapping between specific colors and values of the variable.
+
+With a bar plot, adding an additional variable mapped to color can give us either bars side by side, or a stacked bar plot.  With a bar plot, `color` refers to the outline of the bars, while `fill` refers to the primary color of the bars:
+
+```{r}
+ggplot(healthdata, aes(education, fill=gender)) +
+  geom_bar()
+```
+
+To make the bars side-by-side instead, we change the position:
+
+```{r}
+ggplot(healthdata, aes(education, fill=gender)) +
+  geom_bar(position="dodge")
+```
+
+
+## TRY IT
+
+Modify the plot below to color the points by whether the person is physically_active
+
+```{r}
+# subset the data so we can see all of the points
+# the slice_sample() function takes a random sample of rows
+healthdata_subset <- slice_sample(healthdata, n=100)
+
+ggplot(healthdata_subset, aes(x=bp_sys1, y=bp_sys2)) + 
+  geom_point()
+```
+
+
+## TRY IT
+
+Create a bar plot of health_level, dividing each category by sleep_trouble
+
+```{r}
+
+```
+
+Challenge 1: Remove the `NA` category (those observations) from the plot.  Hint: modify the data before plotting.  For bonus points, don't permanently change the healthdata data frame.  (think pipes!)
+
+Challenge 2: Put the health_status categories in their appropriate scale order on the plot.  
+
+
+### Facets
+
+Another way to view data by groups is to make the same plot multiple times, once for each group.  ggplot2 does this through facets.  We construct the overall plot, and then tell ggplot2 to split the data up by another variable, and how to arrange the subplots.
+
+```{r}
+ggplot(healthdata, aes(education)) +
+  geom_bar()
+
+# side by side
+ggplot(healthdata, aes(education)) +
+  geom_bar() +
+  facet_grid(cols = vars(gender))
+
+# stacked vertically
+ggplot(healthdata, aes(education)) +
+  geom_bar() +
+  facet_grid(rows = vars(gender))
+```
+
+
+## TRY IT
+
+Modify the plot below to have one facet for each value of sleep_trouble
+
+```{r}
+ggplot(healthdata, aes(sleep_hours)) +
+  geom_bar()
+```
+
+Challenge 1: Set the `scales` argument of `facet_grid()` to "free_y".  What did this do?
+
+Challenge 2: sleep_hours is a numeric variable, so ggplot made the x axis a continuous numeric scale.  But sleep_hours only takes on discrete integer values.  Modify the plot so that each bar is labeled with the number of hours as would be the case of sleep_hours was a categorical variable.  Hint: how can you make sleep_hours a categorical variable?
+
+
+
+
+# Tables
+
+## tabyl for Frequency Tables
+
+`dplyr` is great for counting, but it doesn't have built in ways to add totals columns, or format percentages, or do many of the other operations you want when formatting data into a table to share with others. Fortunately, many other people have also found this to be challenging, so they've developed packages to help us.
+
+One option is the [`tabyl` function](https://cran.r-project.org/web/packages/janitor/vignettes/tabyls.html) from the [`janitor`](https://cran.r-project.org/web/packages/janitor/janitor.pdf) package. It uses the basic `tidyverse` format in the sense that it expects a data frame as the first argument, and then you specify columns without quotes. `tabyl` is good to create quick tables for yourself or to share with your collaborators. 
+
+### One variable
+
+Let's start with creating a table for one variable.
+
+```{r}
+tabyl(healthdata, physically_active)
+```
+
+### Two variables
+
+Let's now create a table with two variables -- or a cross tabulation.
+
+```{r}
+tabyl(healthdata, physically_active, gender)
+```
+
+### Adding totals
+
+If you want to add totals to your cross tab, you can use `adorn_totals` -- by default, it seems across columns.
+
+```{r}
+tabyl(healthdata, physically_active, gender) %>% 
+  adorn_totals()
+```
+
+If you want to sum across rows, you can specify `where = "col"`.
+
+```{r}
+tabyl(healthdata, physically_active, gender) %>% 
+  adorn_totals(where = "col")
+```
+
+You can also sum across both rows and columns by specifying `where = "both"`.
+
+```{r}
+tabyl(healthdata, physically_active, gender) %>% 
+  adorn_totals(where = "both")
+```
+
+### Adding percentages
+
+If you want to show percentages rather than counts, you can use `adorn_percentages` -- by default, the denominator is the row total.
+
+```{r}
+tabyl(healthdata, physically_active, gender) %>% 
+  adorn_percentages()
+```
+
+You can change the denominator to be the column total by specifying `denominator = "col"`.
+
+```{r}
+tabyl(healthdata, physically_active, gender) %>% 
+  adorn_percentages(denominator = "col")
+```
+
+You can also add the percentage sign with `adorn_pct_formatting`.
+
+```{r}
+tabyl(healthdata, physically_active, gender) %>% 
+  adorn_percentages(denominator = "col") %>% 
+  adorn_pct_formatting() 
+```
+
+Within `adorn_pct_formatting`, you can round with `digits`.
+
+```{r}
+tabyl(healthdata, physically_active, gender) %>% 
+  adorn_percentages(denominator = "col") %>% 
+  adorn_pct_formatting(digits=0)
+```
+
+### Adding back in counts
+
+If you want both percentages and counts, you can add `adorn_ns`.
+
+```{r}
+tabyl(healthdata, physically_active, gender) %>% 
+  adorn_percentages(denominator = "col") %>% 
+  adorn_pct_formatting() %>% 
+  adorn_ns()
+```
+
+## TRY IT
+
+Create a cross tab of `work_status` by `survey_year`. Include percentages and counts.
+
+```{r}
+
+```
+
+
+
+## gt for Presentation Tables
+
+tabyl has limited options for presentation.  For example, you can't really add a title to the table.
+
+A useful package for refining tables for presentation is `gt`.  It allows you to basically customize anything.  We'll just look at a few features that are often useful for cleaning up output from basic data summaries.
+
+gt doesn't create table contents (counts, summary measures, etc.), it formats tables  We can start with a data frame or a tabyl table, and supply that to the gt() function to start.
+
+```{r}
+tabyl(healthdata, physically_active, gender) %>% 
+  adorn_percentages(denominator = "col") %>% 
+  adorn_pct_formatting(digits=0) %>%
+  gt()
+```
+
+```{r}
+healthdata %>% 
+  group_by(gender) %>%
+  summarize(avg_age = mean(age, na.rm=TRUE)) %>%
+  gt()
+```
+
+### Labels
+
+Title:
+
+```{r}
+healthdata %>% 
+  group_by(gender) %>%
+  summarize(avg_age = mean(age, na.rm=TRUE)) %>%
+  gt() %>%
+  tab_header("Age by Gender")
+```
+
+Column names:
+
+```{r}
+healthdata %>% 
+  group_by(gender) %>%
+  summarize(avg_age = mean(age, na.rm=TRUE)) %>%
+  gt() %>%
+  tab_header("Age by Gender") %>%
+  cols_label(avg_age = "Mean Age",
+             gender = "Gender")
+```
+
+### Formatting
+
+Rounding values
+
+```{r}
+healthdata %>% 
+  group_by(gender) %>%
+  summarize(avg_age = mean(age, na.rm=TRUE)) %>%
+  gt() %>%
+  tab_header("Age by Gender") %>%
+  cols_label(avg_age = "Mean Age",
+             gender = "Gender") %>%
+  fmt_number(columns = avg_age,
+             decimals=1)
+```
+
+Other formatting, like commas in large numbers or $
+
+```{r}
+data.frame(population=c(19389583, 3859375),
+           cost=c(43243, 4324)) %>%
+  gt() %>%
+  fmt_number(columns = population,
+             use_seps = TRUE,  # this is the default; puts in commas
+             decimals = 0) %>%
+  fmt_currency(columns=cost,
+               decimals = 0)  # defaults to US dollar
+```
+
+
+## Hierarchical Tables
+
+Sometimes we want to have a row in a table for all participants or all observations, as well as breakdowns by group.  While there are a few packages that might be able to help with this, this is a bit tricky to do.  The best approach is to compute the per-group measures, then compute the overall measures, and then combine them. 
+
+```{r}
+group_ages <- healthdata %>% 
+  group_by(gender) %>%
+  summarize(avg_age = mean(age, na.rm=TRUE)) 
+group_ages
+
+overall_age <- healthdata %>% 
+  summarize(avg_age = mean(age, na.rm=TRUE)) %>%
+  mutate(gender = "All participants")  # add in a value so we have the same columns
+overall_age
+
+bind_rows(group_ages, overall_age) %>%
+  gt() %>%
+  fmt_number(decimals=1)
+```
+
+
+# Pivoting Basics
+
+Sometimes we need data to be in a different shape -- a different organization of rows and columns.  
+
+Let's look at a very small example to understand what we're talking about.
+
+`tribble()` is a function that makes it easier to manually create a tibble (data frame)
+
+```{r}
+foods <- tribble(~person, ~a, ~b, ~c,
+                 1, "apple", "banana", "cod", 
+                 2, "asparagus", "bacon", "chocolate")
+foods
+```
+
+In `foods`, each row (observation) is a person -- each person's favorite food starting with each letter. 
+
+But maybe we want each row (observation) to be a food?  We might want to get this data set to look like:
+
+```         
+person letter   food     
+     1 a        apple    
+     1 b        banana   
+     1 c        cod      
+     2 a        asparagus
+     2 b        bacon    
+     2 c        chocolate
+```
+
+This is a "longer" representation of the data, where the number of rows increased and the number of columns decreased.  
+
+Or each row to be a letter:
+
+```
+letter     person1 person2
+     a     apple   asparagus
+     b     banana  bacon    
+     c     cod     chocolate
+
+```
+
+This is "wider" than the example above -- we reduced the rows; the number of columns is the same as above, but there is now information being stored in the column names (which person it is).
+
+Why would you reshape the data? You may need to make different types of plots, to organize data in a table, or reformat data when you have multiple years or groups (clinics, states, treatment groups, etc.).
+
+::: callout-tip
+## Pivoting Tips
+
+Before pivoting, eliminate any columns you don't need in the result using select() or otherwise subsetting the data.
+
+Sometimes you need to pivot longer before pivoting wider again.
+:::
+
+
+## Pivot Longer
+
+To go from the `foods` data frame to the first "long" reshaped data above:
+
+```{r}
+pivot_longer(foods,    # tidyverse function, so data frame first
+             a:c,      # what variables to combine together in a new column together; 
+                       # uses the select syntax from dplyr.  Here, choosing 
+                       # everything except the person column
+             names_to = "letter",   # name for a new column that will get existing column names
+             values_to = "food"     # name for a new column that will get values of the columns
+             )
+```
+
+
+## TRY IT
+
+Using healthdata data frame, pivot the data longer so that all of the systolic blood pressure measurements are in the same column.
+
+```{r, eval=FALSE}
+# start with just the columns you need
+healthdata %>%
+  select(id, starts_with("bp_sys")) %>%
+  # then pivot - fill in the function below
+  pivot_longer()
+```
+
+
+## Pivot Wider
+
+What if the data is already in a "long" form?  Here's a small data frame with some random enrollment counts in it:
+
+```{r}
+enrollment <- tribble(~school, ~grade, ~count,
+                      "Valley Forge", 9, sample(100:250, 1),
+                      "Valley Forge", 10, sample(100:250, 1),
+                      "Valley Forge", 11, sample(100:250, 1),
+                      "Valley Forge", 12, sample(100:250, 1),
+                      "Dayton", 9, sample(100:250, 1),
+                      "Dayton", 10, sample(100:250, 1),
+                      "Dayton", 11, sample(100:250, 1),
+                      "Dayton", 12, sample(100:250, 1),
+                      "Rushmore", 9, sample(100:250, 1),
+                      "Rushmore", 10, sample(100:250, 1),
+                      "Rushmore", 11, sample(100:250, 1),
+                      "Rushmore", 12, sample(100:250, 1)
+                      )
+enrollment
+```
+
+Reshape this data to have one column for each grade:
+
+```{r}
+pivot_wider(enrollment,
+            names_from = grade,  # what column determines the new set of columns?
+            values_from = count  # how do we fill in the cell values?
+            )
+```
+
+We might want to make the resulting column names more friendly.  The pivot functions have a lot of additional options:
+
+```{r}
+pivot_wider(enrollment,
+            names_from = grade,  # what column determines the new set of columns?
+            names_prefix = "grade",
+            values_from = count  # how do we fill in the cell values?
+            )
+```
+
+
+## TRY IT
+
+Starting with the data frame below, reshape it to have one row for each education level and one column for each of the included genders.
+
+```{r, eval=FALSE}
+count(healthdata, gender, education) 
+```
+
+
+
+## Longer, then Wider
+
+What if we want to reshape the healthdata data frame to have 1 column for systolic blood pressure and one column for diastolic blood pressure?
+
+We need to first go completely long (id-name-value triplets), then go wide again.  
+
+
+```{r}
+healthdata %>%
+  select(id, starts_with("bp")) %>%
+  pivot_longer(-id)
+```
+
+At this point, how can we go wide?  There is no column just listing systolic or diastolic.  There are really two pieces of information in the resulting "name" column: the type of BP reading, and the measurement number.  We need to separate these values.  We can do this as a part of pivot_longer(), or we can do it after.
+
+First, as part of pivot, with regular expressions that match text patterns:
+
+```{r}
+healthdata %>%
+  select(id, starts_with("bp")) %>%
+  pivot_longer(-id, 
+               names_to=c("type", "measurement"),
+               names_pattern = "bp_(.{3})(\\d)")
+```
+
+What if we didn't know regular expressions?  We could take substrings, or remove parts of the string we don't need, etc.
+
+```{r}
+healthdata %>%
+  select(id, starts_with("bp")) %>%
+  pivot_longer(-id) %>%
+  mutate(measurement = str_sub(name, -1, -1),  # take the last character in "name"
+         name = str_sub(name, 4, 6)  # get "sys" or "dia" by position
+         )
+```
+
+Once the old column names are in two columns, we can now pivot wider:
+
+```{r}
+healthdata %>%
+  select(id, starts_with("bp")) %>%
+  pivot_longer(-id, 
+               names_to=c("type", "measurement"),
+               names_pattern = "bp_(.{3})(\\d)") %>%
+  pivot_wider(names_from=type,
+              values_from=value)
+```
+
+
+# Practice
+
+## Exercise 1
+
+A) Create a histogram of all of the systolic blood pressure measurements across all three measurements.
+
+B) Starting from the same plot, facet it so that there is one histogram per measurement round (1, 2, 3).
+
+```{r}
+
+```
+
+
+## Exercise 2
+
+Make a table with the average cholesterol and pulse values by gender, as well as the count of observations for each gender.  The variables (cholesterol, pulse, count) should be the rows, and male and female should be the columns.  Add a title to the table, and format the values appropriately.
+
+```{r}
+
+```
+
+
+## Exercise 3
+
+Use the [gt website](https://gt.rstudio.com) or other online resources to figure out how to add a footnote to the table you created above.  Put the footnote on a column label, row label, or value in a cell.  
+
+```{r}
+
+```
+
+
+## Exercise 4
+
+Make 3 different plots with the healthdata data set using the gender and height variables.  Use the ggplot2 cheat sheet, R graph gallery, or other resources to help you find options for different types of plots to try.
+
+```{r}
+
+```
+
+
+## Exercise 5
+
+Make a plot or table to help explore whether there are differences in marital status rates by education level using the healthdata data frame.
+
+```{r}
+
+```
+
+
+
+
+
+
