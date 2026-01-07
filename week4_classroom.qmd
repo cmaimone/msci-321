@@ -1,558 +1,335 @@
 ---
-output:
-  html_document:
-    df_print: paged
-    code_download: TRUE
-    toc: true
-    toc_depth: 1
-editor_options:
+title: "Week 4"
+format: html
+editor_options: 
   chunk_output_type: console
 ---
 
-## Setup
+Load your packages and import the data:
+
+```{r}
+library(dplyr)
+healthdata <- read.csv("data/nhanes.csv")
+```
+
+# Pipe Operator
+
+As you put together more complex expressions with R, nesting function calls can make code hard to read, because it flips the order of the steps: the last operation ends up on the outside.
+
+Instead, we can use a "pipe" operator to chain together commands in order. The operator takes the output from a command on the left and makes it the first input to the function on the right.
+
+The built-in version of this operator is `|>`. Another version of the operator that is commonly used, which comes from a package that's installed with tidyverse, is `%>%`. `%>%` has some additional capabilities that `|>` doesn't, but they work the same for the situations we'll discuss here.
+
+```{r}
+# instead of:
+round(log(10))
+
+# with pipe
+log(10) |> round()
+log(10) %>% round()
+```
+
+The left hand side, `log(10)` is computed, and the output becomes the first input to the `round()` function on the right hand side.
+
+Other inputs can also be used:
+
+```{r}
+log(10) |> round(digits=3)
+```
+
+Using the pipe operator means that we can think about the steps we need to take with the data, and then have those steps show up in that order in the code.
+
+::: callout-tip
+## RStudio Tip: Pipe Shortcut
+
+The keyboard shortcut to type a pipe operator in RStudio is Ctrl + Shift + M (Windows) or Cmd + Shift + M (Mac). This will insert `%>%` by default. To change to `|>`, go to the Tools menu \> Global Options \> Code \> Use Native Pipe Operator
+:::
+
+## TRY IT
+
+Convert the following expression to use the pipe operator instead:
+
+```{r}
+max(round(healthdata$weight), na.rm=TRUE)
+
+
+```
+
+## Pipe with Tidyverse
+
+dplyr functions, like `select()`, `filter()`, and `mutate()` take a data frame as their first input and return a data frame. This means they can be chained together easily with the pipe operator.
+
+```{r}
+filter(healthdata, gender == "male") %>%
+  select(height, weight)
+```
+
+Note that the data frame name is omitted from `select()` because the data frame that results from `filter()` is that first input because of the pipe operator.
+
+To make it clearer what data frame you're working with, it's common to put the data frame by itself at the start of a chain of dplyr commands:
+
+```{r}
+healthdata %>%
+  filter(gender == "male") %>%
+  select(height, weight)
+```
+
+Remember: Order matters - if you want to filter using a particular column, make sure you don't remove it with select before the filter step 😀
+
+## TRY IT
+
+Subset the healtdata data frame to contain the the education and marital_status for participants younger than 22.
+
+```{r}
+
+```
+
+# Save a Data Frame
+
+To save a data frame to a CSV file, use the `write.csv()` function.
+
+```{r, eval=FALSE}
+write.csv(healthdata[healthdata$gender == "male", ], 
+          file="male_respondents.csv",
+          row.names = FALSE)  # don't number the rows in the output
+```
+
+The file is saved in your working directory; include directories in the file path to direct the output elsewhere.
+
+If you want to work with the resulting file in Excel, it's still recommended to save a CSV file, instead of an Excel file, as Excel can easily open a CSV file.
+
+It is HIGHLY recommended to save a data frame to a new file; do NOT overwrite the original CSV or Excel file that you read into R and modified (meaning use a different file name when you save the file). Overwriting the original file would prevent you from undoing any changes and prevents you from replicating your workflow, since the complete workflow would use two different versions of the same file.
+
+# Tidyverse
+
+We've seen a few tidyverse functions that are useful when working with data frames: `select()`, `filter()`, `mutate()`, `rename()`. These functions can be useful on their own, but they're most useful when combined together into multi-step workflows.
+
+## Tibbles
+
+Let's start by loading the tidyverse set of packages, and using the `read_csv()` function from the readr package to load the dataset instead of using the built-in `read.csv()` function
 
 ```{r}
 library(tidyverse)
-library(palmerpenguins)
+
+healthdata <- read_csv("data/nhanes.csv")
 ```
 
-# Recap
+`read_csv()` makes slighly different assumptions about the data when importing than `read.csv()`. For example, it reads in all numeric variables as the numeric type instead of using the integer type for some variables.
 
-## Reading in a Data File
+For data sets that include dates or other special types of data, `read_csv()` often handles and automatically converts such data into appropriate types well.
+
+The biggest difference between `read_csv()` and `read.csv()` is that `read_csv()` results in a tibble, which is a data frame with some additional features.
 
 ```{r}
-cer <- read_csv("data/cervical_cancer_data.csv")
-spec(cer)
+healthdata
 ```
 
-Note we used the `read_csv` function from the package `{readr}` this time. Run `spec(cer)` to see what changed with the import (run `str(read.csv("data/cervical_cancer_data.csv"))` for comparison if needed).
+The most obvious difference between a tibble and a regular data frame is that the output of a tibble in the console is limited to what fits.
 
-## Working with variables (columns)
+To view the entire data frame, use the `View()` function:
+
+```{r, eval=FALSE}
+View(healthdata)
+```
+
+## Review
+
+We've seen 3 key functions from the dplyr package already:
+
+-   `select()`: to choose columns
+-   `filter()`: to choose rows
+-   `mutate()`: to create a column or alter an existing column
+
+As well as:
+
+-   `rename()`: to change the name of existing columns
+-   `arrange()`: to sort the data frame by selected columns
+
+Remember that we do not need quotes around column names inside of these functions.
+
+```{r, eval=FALSE}
+select(healthdata, gender, age)
+filter(healthdata, age > 40)
+mutate(healthdata, senior = age >= 65)
+arrange(healthdata, age)
+```
+
+We're going to add a few more functions to this set, and learn how to combine them together using the pipe operator (`%>%` or `|>`).
+
+## Summarize
+
+We've seen how to subset a data frame with dplyr functions, but how do we compute summary statistics, like a mean? `mutate()` is for changing an entire column in a data frame (either an existing one or creating a new one). `summarize()` is for computing single values, such as a mean or median.
 
 ```{r}
-cer$Age_of_Respondents
-mean(cer$Age_of_Respondents)
-
-# making new variables
-cer$is_minor <- cer$Age_of_Respondents < 18
+summarize(healthdata, mean_age = mean(age))
 ```
 
-## Indexing dataframes
+The result is still a data frame.
+
+You can compute multiple summary measures at the same time:
 
 ```{r}
-# by position: df[rows_indices, col_indices]
-cer[, c(2,5)]
-cer[1:10, c(2,5)]
-
-# by column name
-cer[,c("Age_of_Respondents", "Is_Diagnosed_with_STDs")]
+summarize(healthdata, 
+          mean_age = mean(age),
+          mean_weight = mean(weight, na.rm=TRUE))
 ```
 
-## Select: choose columns
+## TRY IT
 
-The `select()` function lets us choose which columns (or variables) we want to keep in our data. This is an alternative to the base R expressions above.
-
-```{r}
-cer %>% 
-  select(Age_of_Respondents > 18)
-```
-
-You can also select columns based on conditions such as `starts_with` , `ends_with`, or `contains`
-
-```{r}
-cer %>% 
-  select(starts_with("Time_Since")) %>% 
-  names
-```
-
-## Mutate: modify columns
-
-`mutate()` is used to both change the values of an existing column and make a new column.
-
-```{r}
-cer %>% 
-  mutate(is_senior = Age_of_Respondents > 65)
-```
-
-# Choosing observations/rows
-
-With base R, we know we can index a data frame by row position:
-
-```{r}
-cer[1:20,]
-```
-
-However, suppose we want to choose rows from a data frame that might meet a specific condition. For example, choose all data for patients aged greater than 65, or select all sales items that were sold in the month of December.
-
-Typically, we use Boolean expressions to choose the ROWS (not the columns) because we want to select which particular observations meet some criteria.
-
-If we have a Boolean vector (`TRUE` and `FALSE` values) that is the same length as the number of rows or columns, we can use it to select data.
-
-For example, let's suppose you want to find respondents in the `cer` dataset who are above the age of 18
-
-```{r}
-cer$Age_of_Respondents
-cer$Age_of_Respondents > 18
-cer[cer$Age_of_Respondents > 18,]
-
-# cer$is_minor was created above
-cer$is_minor
-cer[cer$is_minor, ]
-```
-
-The command above works because R selects the values which evaluated to TRUE and discards the values that evaluated to FALSE.
-
-What if we wanted to know how many observations meet a specific condition?  We can use `sum()` to count TRUE values (because TRUE = 1 and FALSE = 0):
-
-```{r}
-sum(cer$Age_of_Respondents > 18)
-sum(cer$is_minor)
-
-# count the opposite by using ! (not)
-sum(!cer$is_minor)
-
-# if there is missing:
-sum(cer$Number_of_Sexual_Partners > 3)
-sum(cer$Number_of_Sexual_Partners > 3, na.rm=TRUE)
-
-# count missing:
-sum(is.na(cer$Number_of_Sexual_Partners))
-```
-
-Let's see an example with the penguins data frame: Select rows where penguin bill length is greater than 34.
-
-```{r}
-penguins$bill_length_mm
-penguins$bill_length_mm < 34
-penguins[penguins$bill_length_mm < 34] # what happened here?
-penguins[penguins$bill_length_mm < 34,]
-```
-
-## dplyr method - Filter: choose rows
-
-We can also use tidyverse / dplyr functions to choose rows.
-
-To choose which rows should remain in our data, we use `filter()`. As with `[]`, we write expressions that evaluate to TRUE or FALSE for each row. Like `select()`, we can use the column names without quotes.
-
-For example, let's suppose you want to find respondents in the `cer` dataset who are above the age of 18
-
-```{r}
-filter(cer, Age_of_Respondents > 18)
-```
-
-Alternatively, the preferred syntax is:
-
-```{r}
-cer %>% 
-  filter(Age_of_Respondents > 18)
-```
-
-If the column itself contains TRUE/FALSE values, then you can also select TRUE values as:
-
-```{r}
-cer %>% 
-  filter(Is_Diagnosis_Cancer)
-```
-
-Similarly, select rows where penguin bill length is greater than 34.
-
-```{r}
-penguins %>% 
-  filter(bill_length_mm > 34)
-```
-
-### EXERCISE
-
-Select the Age_of_Respondents, Smoking_in_Years, and Smoking_in_Packs_per_Year columns for respondents who smoke. Make use of the `%>%` operator.
+Compute the mean and median of both bp_sys1 and bp_sys2
 
 ```{r}
 
 ```
 
-## Note: Handling Missing
+## Multi-step Operations
 
-Note that dplyr and base R handle missing values differently when selecting rows:
+What about computing summary statistics on a subset of the data? To do that, we need to combine multiple functions. Use the pipe operator (`%>%` or `|>`) to combine multiple commands.
 
-```{r}
-penguins[penguins$bill_length_mm < 34, ]
-
-penguins %>%
-  filter(bill_length_mm < 34)
-```
-
-
-## Chaining multiple conditions together
-
-Remember, any expression that evaluates to TRUE or FALSE for each row will work to choose rows.
-
-For example, say we want to choose observations where the respondent is a smoker and a minor
+A simple version is to subset the observations that we want to use with `filter()`:
 
 ```{r}
-# condition 1 -- respondent is a smoker
-cer$Is_Smoking
-
-# condition 2 - respondent is a minor
-cer$Age_of_Respondents < 18
-
-# combine both conditions with AND
-cer$Is_Smoking & cer$Age_of_Respondents < 18
-
-# use the above expression to choose ROWS from cer
-cer[cer$Is_Smoking & cer$Age_of_Respondents < 18, ] # base R
+healthdata %>%
+  filter(gender == "male") %>%
+  summarize(mean_weight = mean(weight, na.rm=TRUE))
 ```
 
-We can also use dplyr filter to do the same
+A more complicated example is to change a variable with `mutate()` (just temporarily) to use in a calculation. For example, let's convert weight from kg to pounds before computing the mean:
 
 ```{r}
-cer %>% 
-  filter(Is_Smoking & Age_of_Respondents < 18)
-
-# alternative expression
-cer %>% 
-  filter(Is_Smoking,
-         Age_of_Respondents < 18)
-
-# also 
-cer %>% 
-  filter(Is_Smoking) %>% 
-  filter(Age_of_Respondents < 18)
+healthdata %>%
+  filter(gender == "male") %>%
+  mutate(weight = weight * 2.2) %>%
+  summarize(mean_weight = mean(weight, na.rm=TRUE))
 ```
 
-By default, if multiple conditions are provided to filter, it will join them logically with AND.
-
-To join conditions with OR, we would do the following
+Compare this to the base R code for the same operation:
 
 ```{r}
-cer %>% 
-  filter(cer$Is_Smoking | cer$Age_of_Respondents < 18)
+mean(healthdata$weight[healthdata$gender == "male"] * 2.2, na.rm=TRUE)
 ```
 
-## EXERCISE
+## TRY IT
 
-Select rows from penguins where bill length is less than 34 or greater than 58.
+Compute the median pulse for female participants.
 
 ```{r}
 
 ```
 
-## EXERCISE
+## Working with Groups
 
-How many smokers were diagnosed with cancer in the cer dataset?
+Above, we computed summary statistics for particular subgroups. But it would be nice to compute them for all subgroups at once -- for example, for both male and female participants. Use `group_by()` as part of a multi-step operation to do that:
 
-How many non-smokers were diagnosed with cancer in the cer dataset?
+```{r}
+healthdata %>%
+  group_by(gender) %>%
+  summarize(mean_weight = mean(weight, na.rm=TRUE))
+```
+
+We get one row of output for each distinct value of the variable we grouped by.
+
+We can also group by multiple variables:
+
+```{r}
+healthdata %>%
+  group_by(age, gender) %>%
+  summarize(mean_weight = mean(weight, na.rm=TRUE))
+```
+
+The rows have all combinations of the two grouping variables that exist in the data.
+
+## TRY IT
+
+Compute the mean of `bp_sys1` by `age_decade`
 
 ```{r}
 
 ```
 
+# Count
 
+A common summary value to compute is the number of observations in a group (like you get with `table()`). To compute counts using dplyr functions, we can use `count()` and `n()`:
 
-## dplyr: Group_by
-
-When we want to compute summary measures or do other computation on groups in our data (as defined by some grouping variable), we can explicitly group our tibble into subgroups. This isn't very useful by itself, but it is often combined with `summarize()` to compute summary measures by group.
-
-First, what if we just group our data by a specific column:
+First, use `count()` to make a frequency table:
 
 ```{r}
-cer %>%
-  group_by(Is_Diagnosed_with_STDs)
+healthdata %>%
+  count(gender)
 ```
-
-When we print this in the console,
-
-```         
-# A tibble: 835 × 36
-# Groups:   Is_Diagnosed_with_STDs [3]
-   Age_of_Respondents Number_of_Sexual_Partners First_Sexual_Intercourse
-                <dbl>                     <dbl>                    <dbl>
- 1                 18                         4                       15
- 2                 15                         1                       14
- 3                 34                         1                       NA
- 4                 52                         5                       16
- 5                 46                         3                       21
- 6                 42                         3                       23
- 7                 51                         3                       17
- 8                 26                         1                       26
- 9                 45                         1                       20
-10                 44                         3                       15
-...
-```
-
-we see that it tells us that the tibble (data frame) is grouped by "Is_Diagnosed_with_STDs", and that there are three groups. It doesn't rearrange the rows, it just keeps track of the groups for us.
-
-Now, let's combine it with summarize.
-
-```{r, eval=TRUE}
-cer %>% 
-  group_by(Is_Diagnosed_with_STDs) %>% 
-  summarise(
-    mean_age = mean(Age_of_Respondents),
-    sd_age = sd(Age_of_Respondents)
-  )
-```
-
-Now we get one row for each group, and one column for each summary measure.
-
-We can also group by multiple columns, and we'll get all of the combinations of values present across the columns:
 
 ```{r}
-cer %>% 
-  group_by(Is_Diagnosed_with_STDs, Is_Smoking) %>% 
-  summarise(
-    mean_age = mean(Age_of_Respondents),
-    sd_age = sd(Age_of_Respondents)
-  )
+healthdata %>%
+  count(gender, age_decade)
 ```
 
-We are getting extra information alerting us to the fact that our output is grouped. If we don't want the groups in place anymore, we can ungroup(). Usually this doesn't matter though if we're just printing output to the screen.
+If we want the count along with other values, we can use `n()` with `summarize()`:
 
 ```{r}
-cer %>% 
-  group_by(Is_Diagnosed_with_STDs, Is_Smoking) %>% 
-  summarise(
-    mean_age = mean(Age_of_Respondents),
-    sd_age = sd(Age_of_Respondents)
-  ) %>% 
-  ungroup()
+healthdata %>%
+  group_by(gender) %>%
+  summarize(n = n(), 
+            mean_pulse = mean(pulse, na.rm=TRUE))
 ```
 
-Usually this would come up after more complicated operations, and often after computing summary measures by group.
+## TRY IT
 
-### EXERCISE
-
-Compute the `min()` and `max()` `Age_of_Respondents` for each value of `Number_of_Pregnancies`.
+How many participants have each work_status?
 
 ```{r}
 
 ```
 
-## Slicing
+## Computing Proportions
 
-One operation we could do with a grouped tibble is to select just certain rows from each group. For example, we could use the `slice()` function to select the first row from each group:
-
-```{r}
-cer %>%
-  select(Number_of_Pregnancies, everything()) %>%  # to reorder columns for output
-  group_by(Number_of_Pregnancies) %>%
-  slice(1)
-```
-
-If you look at this output in the console, you'll see the resulting tibble still has groups in it. This is a case where you might want to ungroup:
+Knowing the number of observations in each group is useful, but we often want to know the proportion as well. We can compute proportions by summing the group counts, and dividing each by the sum:
 
 ```{r}
-cer %>%
-  select(Number_of_Pregnancies, everything()) %>%  # to reorder columns for output
-  group_by(Number_of_Pregnancies) %>%
-  slice(1) %>% 
-  ungroup()
+healthdata %>%
+  count(gender) %>%
+  mutate(prop = n / sum(n))
 ```
 
-There are some useful slice functions to choose the row with the min (slice_min) or max (slice_max) value of some variable, or to choose random rows (slice_sample).  But we use slice functions fairly rarely.
-
-## Simpson's Paradox
-
-Why is grouping so important?  Because if we don't properly account for meaningful groups in our data, we can reach the wrong conclusions.  
-
-Let's look at the penguins data.  What's the correlation between bill length and depth?  We can assume they should be positively correlated - bigger penguins should have bigger beaks in both directions, right?
-
+Or, if you want to compute other summary statistics at the same time:
 
 ```{r}
-cor(penguins$bill_depth_mm, penguins$bill_length_mm, 
-    use="pairwise.complete") # we'll cover correlation again next week
+healthdata %>%
+  group_by(gender) %>%
+  summarize(mean_pulse = mean(pulse, na.rm=TRUE),
+            n = n()) %>%
+  mutate(prop = n / sum(n))
 ```
 
-Hmm...that's weird.  Let's take a look:
+For simple cases, the equivalent with built-in functions is:
 
 ```{r}
-plot(penguins$bill_depth_mm, penguins$bill_length_mm)
+table(healthdata$gender) / nrow(healthdata)
+
+# or 
+prop.table(table(healthdata$gender))
 ```
 
-What's going on here?  There are 3 different species of penguins in the data:
+## TRY IT
+
+What proportion of participants have each `marital_status`?
 
 ```{r}
-penguins %>%
-  group_by(species) %>%
-  summarize(cor(bill_length_mm, bill_depth_mm, use="pairwise"))
+
 ```
 
-When we compute the correlation by group, it's positive in all groups.  Let's look at the plot (we'll cover how to use ggplot more later in the course):
+## tabyl
+
+The `tabyl()` function in the janitor package is useful for computing tables with counts and proportions. It uses a tidyverse syntax, taking a data frame as the first input and the unquoted name of the column(s) as additional inputs.
 
 ```{r}
-ggplot(penguins, aes(bill_length_mm, bill_depth_mm, color=species)) +
-  geom_point()
+# install.packages("janitor")
+library(janitor)
+
+tabyl(healthdata, gender)
 ```
 
-Look at the groups in your data!  
-
-
-## Arrange
-
-Finally, we come to `arrange()`, which is how we sort the rows in our data. We would mostly use this when viewing our data, but it's also useful when we need to compute a time series (lags and leads in the data), when we want to select just a few rows from each group, or any other order-sensitive transformations on our data.
+With two variables, you just get counts:
 
 ```{r}
-cer %>% 
-  arrange(Age_of_Respondents) %>% 
-  View()
+tabyl(healthdata, gender, work_status)
 ```
-
-To sort in reverse order, wrap the column name in `desc()`.
-
-```{r}
-cer %>% 
-  arrange(desc(Age_of_Respondents)) %>% 
-  View()
-
-# optionally-
-cer %>% 
-  arrange(-Age_of_Respondents) %>% 
-  View()
-```
-
-Arrange by multiple columns, in order:
-
-```{r}
-cer %>% 
-  arrange(-Age_of_Respondents, Number_of_Sexual_Partners) %>% 
-  View()
-```
-
-## Summarize: Across
-
-If we want to apply the same summary functions to multiple columns in our data frame, we can write out all of the summary commands explicitly, or we can use `across()` to select which variables to summarize with which functions.
-
-Let's use the `n_distinct()` function to count the number of distinct values in each column (`n_distinct(x)` is the same as `length(unique(x))`. This will help us see which columns don't have useful information because every value is the same.
-
-`across()` selects columns using the helper functions you could give to `select()` directly. We'll use `everything()` here to select all columns.
-
-```{r}
-cer %>%
-  summarize(across(everything(), n_distinct))
-```
-
-If you wanted to select columns using their names, put them in a vector (so it's a single input argument):
-
-```{r}
-cer %>%
-  summarize(across(c(Age_of_Respondents, Number_of_Sexual_Partners, Number_of_Pregnancies), 
-                   n_distinct))
-```
-
-If we want to apply multiple functions:
-
-```{r}
-cer %>%
-  na.omit() %>% 
-  summarize(across(where(is.numeric), ## select columns that are of type numeric
-                   list(min, max))) %>% # take the min and max of each column
-  View()
-```
-
-To fix the names in the output, explicitly name our summary functions in the list:
-
-```{r}
-cer %>%
-  na.omit() %>%
-  summarize(across(!where(is.character), ## select columns that are not of type character
-                   list(min_val=min, max_val=max))) %>% # take the min and max of each column
-  View()
-```
-
-There are other options for output naming patterns available too.
-
-### Anonymous Functions
-
-If you need to specify additional options to a function you want to use with across, then the syntax gets a bit more complicated:
-
-```{r}
-cer %>%
-  summarize(across(where(is.numeric),
-                   mean))
-
-cer %>%
-  summarize(across(where(is.numeric),
-                   \(x) mean(x, na.rm = TRUE)))
-
-# or
-cer %>%
-  summarize(across(where(is.numeric),
-                   ~mean(.x, na.rm = TRUE)))
-```
-
-Or if you need to apply multiple functions, such as when counting missing values:
-
-```{r}
-cer %>%
-  summarize(across(everything(), 
-                   \(x) sum(is.na(x))))
-```
-
-
-## Count
-
-A bonus function that I use frequently: `count()`. It's how you'd get output similar to `table()`
-
-By itself, it counts the number of rows:
-
-```{r}
-cer %>%
-  count()
-```
-
-If you supply the name of a column, it makes a table:
-
-```{r}
-cer %>%
-  count(Number_of_STD_Diagnosis)
-```
-
-This is the same result as if you grouped the data first:
-
-```{r}
-cer %>%
-  group_by(Number_of_STD_Diagnosis) %>%
-  count()
-```
-
-You can group by multiple columns directly with count:
-
-```{r}
-cer %>%
-  count(Is_Smoking, Number_of_STD_Diagnosis)
-```
-
-If you want to include the count of rows with other variables in summarize, you can use n() instead:
-
-```{r}
-cer %>%
-  group_by(Number_of_STD_Diagnosis) %>%
-  summarize(count = n(),
-            avg_age = mean(Age_of_Respondents))
-```
-
-n() is also useful when you want to compute proportions:
-
-```{r}
-cer %>%
-  summarize(count_under_18 = sum(Age_of_Respondents < 18),
-            prop_under_18 = count_under_18/n())
-```
-
-Note that you can use values you defined earlier in the call.
-
-If you want proportion of the whole dataset with groups:
-
-```{r}
-cer %>%
-  group_by(Is_Smoking) %>%
-  summarize(count_under_18 = sum(Age_of_Respondents < 18),
-            total = n(),
-            prop_under_18 = count_under_18/n()) ## group proportions
-
-cer %>%
-  group_by(Is_Smoking) %>%
-  summarize(count_under_18 = sum(Age_of_Respondents < 18),
-            prop_under_18 = count_under_18/n(),
-            group_total = n(),
-            group_prop = n()/nrow(cer))
-```
-

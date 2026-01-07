@@ -1,11 +1,7 @@
 ---
-output:
-  html_document:
-    df_print: paged
-    code_download: TRUE
-    toc: true
-    toc_depth: 1
-editor_options:
+title: "Week 3"
+format: html
+editor_options: 
   chunk_output_type: console
 ---
 
@@ -92,765 +88,520 @@ Now that we loaded `praise`, we can use functions within it!
 praise()
 ```
 
-# Importing Data
-
-## Reading in a Data File
-
-Most of the time, you'll read in data from a file. For example:
+# Data Frames: Change Column Names
 
 ```{r}
-cer <- read.csv("data/cervical_cancer_data.csv")
+# data import
+library(dplyr)
+healthdata <- read.csv("data/nhanes.csv")
 ```
 
-Most data in R will be stored in a data frame (more below).
+We get the current names of variables/columns in a data frame with `names()`:
 
-As with other variables, when we type the name of the data frame, it will print the contents of the variable to the console.
+```{r}
+names(healthdata)
+```
+
+The output is a vector, so we can also reference individual elements of the result:
+
+```{r}
+names(healthdata)[2]
+```
+
+Changing the name of a column involves a slightly weird syntax: we use `names()` on the left-hand side of an assignment operation.
+
+To change the name of the second column to "year", we select the value we want to change, and then assign a new value to it:
+
+```{r}
+names(healthdata)
+names(healthdata)[2] <- "year"
+names(healthdata)
+```
+
+You can change multiple value at once as well:
+
+```{r}
+names(healthdata)
+names(healthdata)[2:3] <- c("year", "participant_gender")
+names(healthdata)
+```
+
+## rename()
+
+The `rename()` function from the dplyr package also allows you to rename columns, with a slightly easier syntax. `rename()` takes a data frame as input and returns the whole data frame with the columns renamed as output. The syntax is:
 
 ```{r, eval=FALSE}
-cer
+rename(data_frame, new_name = old_name)
 ```
 
-Note: This dataset is composed of responses from 858 patients and 36 variables focusing on the prediction of indicators or diagnosis of cervical cancer. The dataset provides demographic information, habits, and historic medical records of the 858 patients from Hospital Universitario de Caracas in Caracas, Venezuela. Look at the reference document inside the data folder for more information.
-
-**TIPS**: if you get an error message that a file can't be found when you're trying to import it:
-
-1)  Check the spelling of the filename for typos
-
-2)  Check your working directory (`getwd()`) and make sure the path to the file is correct and completely specified given what your working directory is.
-
-3)  Make sure you extracted the contents of the .zip file you downloaded. We've seen some problems on Windows computers especially where a .zip file isn't really unzipped - it's just letting you see inside without actually expanding the contents and creating real files. Right click on the file and look for an Extract All or similar option.
-
-## From a Package
-
-Today, we're going to work with data on penguins from <https://github.com/allisonhorst/palmerpenguins>. It's been included in an R package: palmerpenguins.
-
-There's a data frame in the package called penguins. Like with functions in a package, we can use it once we've loaded the package with the library command above.
-
-```{r}
-penguins
-```
-
-## Manual Creation
-
-It's also possible to create a data frame from scratch. You will not do this often.
-
-```{r, manualdf}
-month_info <- data.frame(
-  month=month.name,
-  index=1:12,                 
-  days=c(31,28,31,30,31,30,31,31,30,31,30,31)
-  )
-
-month_info
-```
-
-## Multiple Data Frames
-
-Note that we now have multiple data frames loaded into our environment.  It is common in R to be working with multiple data frames at the same time.  You can see the data frames (and other objects) in the environment in the Environment tab over to the right in RStudio.  The `penguins` data frame may not show up in the environment until you change it (because it's part of a package); to force it to show, run `data(penguins)` and then view it (type `penguins` in the console).
-
-The examples and exercises below jump between several of these data frames.  Remember, use the Environment tab to check what's in your environment.
-
-
-# Data Frame Basics
-
--   Rectangles of data
--   Rows are observations
--   Columns are variables
--   Columns (variables) have names
--   Multiple vectors stuck together - each column is a vector
--   Each column has 1 type of data (numeric, character, logical, etc.)
--   Data frames can have columns with different types of data
-
-## What is a data frame?
-
-It has columns and rows. Let's look at it:
+Example:
 
 ```{r, eval=FALSE}
-View(cer)
+rename(healthdata, year = survey_year)
+names(rename(healthdata, year = survey_year))  # to see the names
+
+# rename multiple columns at once
+rename(healthdata, year = survey_year, systolic = bp_sys1)
 ```
 
-Or we can look at a few rows in the console:
+To make the changes stay, assign the output back to the original data frame variable name:
 
 ```{r}
-head(cer)
+healthdata <- rename(healthdata, year = survey_year)
 ```
 
-What size is it?
+Let's change the name back:
 
 ```{r}
-dim(cer)
-nrow(cer)
-ncol(cer)
+healthdata <- rename(healthdata, survey_year = year)
 ```
 
-What are the variables?
+## Valid Names
+
+Variable names in R need to start with a letter (or, technically, a letter or a period, but don't use a period). They can contain letters, numbers, underscores, and periods. A good convention, or style, to use is to name variables in all lower case letters and numbers, using underscores (`_`) to separate words in the name as needed.
+
+Variable names are case sensitive.
+
+Sometimes, we might import a dataset that has column names that don't conform to the requirements. For example, the column names might start with a number or have spaces in them. When data with invalid names is imported with `read.csv()`, by default it will add an "X" to the beginning of variable names if needed, and replace spaces with a period. Other data import functions, such as `read_csv()` from the readr/tidyverse package, leave the names unchanged by default.
+
+What happens when we use a name that doesn't conform to the specifications for a column in a data frame? Here's an example:
 
 ```{r}
-names(cer)
+names(healthdata)[1] <- "123"
+names(healthdata)
 ```
 
-What type of data is in each variable?
-
-```{r}
-str(cer)
-```
-
-Get some basic info about the variables:
-
-```{r}
-summary(cer)
-```
-
-### EXERCISE
-
-Using the `penguins` data frame, write commands to figure out:
-
--   How many rows and columns it has?
--   What are the names of the variables?
-
-```{r}
-
-
-```
-
-## Working with Variables
-
-Each column (variable) is a vector. We can access them individually with the `$` notation using the name of each variable:
-
-```{r}
-cer$Age_of_Respondents
-penguins$species
-```
-
-We can do things like count values, summarize numeric values, etc.
-
-```{r}
-table(cer$Number_of_Pregnancies)
-median(month_info$days)
-```
-
-Notice that, by default, `table` doesn't include missing values. To see those, you need to add `useNA = "ifany"` or `useNA = "always"`.
-
-```{r}
-table(cer$Number_of_Pregnancies, useNA = "always")
-```
-
-We can also use the vectors in expressions:
-
-```{r}
-month_info$days/7
-```
-
-### EXERCISE
-
-Import data from `"data/nu_degrees.csv"` and save it in a variable (choose an appropriate name).
-
-View the data.
-
-What is the average (the function is `mean()`) number of bachelor's degrees issued in a year?
-
-What is the standard deviation in the number of doctoral degrees issued each year? The function is `sd()`.
-
-How many total masters degrees were issued for the years in the data? Hint: `sum()`.
-
-```{r}
-
-```
-
-Challenge: How many total degrees were issued each year? How many total degrees were issued across all years and types?
-
-```{r}
-
-```
-
-## Computing summary measures
-
-Summary statistics provide a concise overview of the characteristics of a dataset, offering insights into its central tendency, dispersion, and distribution.
-
-Base R provides several built-in functions for computing summary statistics, including summary(), mean(), median(), min(), max(), quantile(), sd(), and var().  We saw these briefly before.
-
-These functions operate on a vector.  Let's try them with the `bill_depth_mm` variable: 
-
-```{r}
-mean(penguins$bill_depth_mm)
-median(penguins$bill_depth_mm)
-sd(penguins$bill_depth_mm)
-max(penguins$bill_depth_mm)
-```
-
-What happened here? NA values need to be explicitly ignored when calling the functions above.
-
-```{r}
-mean(penguins$bill_depth_mm, na.rm = TRUE)
-median(penguins$bill_depth_mm, na.rm = TRUE)
-sd(penguins$bill_depth_mm, na.rm = TRUE)
-max(penguins$bill_depth_mm, na.rm = TRUE)
-```
-
-## EXERCISE
-
-What is the minimum and maximum age of respondents in the cervical cancer dataset that you imported above?
-
-```{r}
-
-```
-
-## Making new columns
-
-We can add a new column to the data frame by naming it with the `$` notation, and assigning a value to it. For example, make a column that has bill length in **centimeters (cm)** instead of **millimeters (mm)**
-
-```{r}
-names(penguins)
-penguins$bill_length_cm <- penguins$bill_length_mm / 10  # make new variable: note CM instead of MM in the name
-names(penguins)  # check to see that it was added
-```
-
-Columns will be added to the end (right).
-
-```{r}
-View(penguins)
-```
-
-We usually don't bother to reorder the variables, but we can by selecting them in the order we want:
-
-```{r}
-penguins <- penguins[ , c(
-  "species",
-  "island",
-  "sex",
-  "year",
-  "bill_length_mm",
-  "bill_length_cm",
-  "bill_depth_mm",
-  "flipper_length_mm",
-  "body_mass_g"
-  )
-  ]
-
-names(penguins)
-View(penguins)
-```
-
-### EXERCISE
-
-Using `month_info` (small data frame created manually above): make a new variable as part of `month_info`, called `weeks`, that is the number of days divided by 7.
-
-```{r}
-
-```
-
-Challenge: Make a new logical column called `long_month` as a part of `month_info` that is TRUE if the month has 31 days
-
-```{r}
-
-```
-
-Make a new column in the degrees data (loaded in an exercise above from `"data/nu_degrees.csv"`) with the total number of degrees awarded each year
-
-```{r}
-
-```
-
-
-## Indexing by Position: Vectors
-
-We can access the individual values in vectors or data frames by their index position. We put the number of the element we want in `[]`.
-
-Let's start with vectors:
-
-```{r}
-# create a dataframe
-month_info <- data.frame(
-  month=month.name,
-  index=1:12,                 
-  days=c(31,28,31,30,31,30,31,31,30,31,30,31)
-  )
-
-# get a column (i.e. a vector)
-month_info$month
-# index the vector
-month_info$month[1]
-```
-
-We can also select a range of values:
-
-```{r}
-1:5  # shortcut for making a vector with values 1, 2, 3, 4, 5
-c(1, 2, 3, 4, 5)
-month_info$month[1:5]
-```
-
-Or non-adjacent values by using a vector of values. We can make our own vector with the `c()` function:
-
-```{r}
-c(1, 3, 5, 7, 9, 11)
-month_info$month[c(1, 3, 5, 7, 9, 11)]
-```
-
-Negative indices mean to exclude the value at the given position:
-
-```{r}
-month_info$month[-1]
--1:-6
-month_info$month[-1:-6]
-month_info$days
-table(month_info$days)
-
-month_info$days[-2]
-table(month_info$days[-2])
-```
-
-## Indexing Dataframes
-
-### Indexing by Position
-
-With data frames, there are two dimensions (rows and columns), so we need two indices:
-
-```{r}
-# df[rows, cols]
-month_info
-month_info[1, 1]
-month_info[2, 1]
-month_info[1, 2]
-```
-
-There is a shortcut if we want all rows or all columns -- we can leave one position blank:
-
-Select first row
-
-```{r}
-month_info[1, ]
-```
-
-Select first two rows
-
-```{r}
-month_info[1:2, ]
-```
-
-Select first column
-
-```{r}
-month_info[ ,1]
-```
-
-This gave us a vector back, but with `penguins`:
-
-```{r}
-penguins[ ,1]
-```
-
-we get a data frame/tibble back. This is one difference between tibbles and regular data frames.
-
-We can select rows and columns at the same time:
-
-```{r}
-month_info[6:7, 1:2]
-```
-
-If we want rows or columns that aren't next to each other, you can use a vector.
-
-```{r}
-month_info[c(1, 3), ]
-```
-
-### EXERCISE
-
-Using the Northwestern degree data set from above: select rows 2 through 5, and columns 1 through 2
-
-```{r}
-
-```
-
-### Indexing by Name
-
-We've seen that we can reference columns by name with `$` notation (no quotes on names)
-
-```{r}
-names(month_info)
-
-month_info$days
-```
-
-Note that the `$` notation got us a vector back.
-
-```{r}
-month_info$days
-```
-
-Use names in `[]`: put them in quotes
-
-```{r}
-month_info[ , "days"]
-```
-
-With penguins (tibble), it stays as a tibble:
-
-```{r}
-penguins[ , "bill_length_mm"]
-```
-
-Multiple columns by name, need to use a vector of names:
-
-```{r}
-c("month", "days")
-month_info[ , c("month", "days")]
-
-month_info[ 2:4 , c("days", "month")]
-```
-
-## Tidy data and Tidyverse
-
-### Tidy Data
-
-Tidy data is a consistent way to organize your data. Once you have tidy data and the tidy tools provided by packages in the tidyverse, you will spend much less time munging data from one representation to another, allowing you to spend more time on the analytic questions at hand.
-
-There are 3 inter-related rules which make a dataset tidy:
-
-1.  Each variable must have its own column
-2.  Each observation must have its own row
-3.  Each value must have its own cell
-
-If you'd like to learn more about the underlying theory, you might enjoy the *Tidy Data* paper published in the Journal of Statistical Software, <http://www.jstatsoft.org/v59/i10/paper>.
-
-### Setup
-
-```{r, eval=TRUE}
-library(tidyverse)
-```
-
-This gives you info on which packages it actually loaded, because when you install tidyverse, it installs \~25 packages plus dependencies, but it only loads the ones listed.
-
-Tidyverse packages tend to be verbose in warning you when there are functions with the same name in multiple packages.
-
-### Why use Tidyverse?
-
-Tidyverse packages do a few things:
-
--   fix some of the annoying parts of using R, such as changing default options when importing data files and preventing large data frames from printing to the console
--   are focused on working with data frames --or rather tibbles-- (and their columns), rather than individual vectors
--   usually take a data frame/tibble as the first input to a function, and return a data frame/tibble as the output of a function, so that function calls can be more easily strung together in a sequence
--   share some common naming conventions for functions and arguments that have a goal of making code more readable
--   tend to be verbose, opinionated, and are actively working to provide more useful error messages
-
-Tidyverse packages are particularly useful for:
-
--   data exploration
--   reshaping data sets
--   computing summary measures over groups
--   cleaning up different types of data
--   reading and writing data
--   predictive modeling
--   reporting results
-
-### EXERCISE
-
-Is the dataset `classroom` in a tidy data structure? Why or why not? What would you do make it tidy?
-
-```{r}
-classroom <- tribble(
-  ~name,    ~quiz_scores, ~final_grade,
-  "Billy",  "67, 89, 82", "B",
-  "Suzy",  "35, 48, 52", "C",
-  "Lionel", "65, 79, 72", "B",
-  "Jenny",  "99, 100, 95", "A",
-  )
-classroom
-
-```
-
-
-## dplyr
-
-dplyr is the core package of the tidyverse. It includes functions for working with tibbles (or any data frames). While you can still use base R operations on tibbles/data frames, such as using `$` and `[]` subsetting like we did above, dplyr provides alternatives to all of the common data manipulation tasks.
-
-It contains six main functions, each a verb, of actions you frequently take with a data frame: select, filter, mutate, group_by, summarize, and arrange.
-
-Before we start, let's remember what columns are in our data:
-
-```{r}
-names(cer)
-```
-
-### Select: choose columns
-
-The `select()` function lets us choose which columns (or variables) we want to keep in our data.
-
-The data frame is the first input, and the name of the column is the second. We do not have to put quotes around the column name.
-
-```{r}
-select(cer, Age_of_Respondents)
-```
-
-If we want to select additional columns, we can just list the column names as additional inputs, each column name separated by commas:
-
-```{r}
-select(cer, Age_of_Respondents, Number_of_Sexual_Partners, Is_Diagnosed_with_STDs)
-```
-
-As with `[]` indexing, columns will be returned in the order specified:
-
-```{r}
-select(cer, Is_Diagnosed_with_STDs, Number_of_Sexual_Partners, Age_of_Respondents)
-```
-
-We could also use the column index number if we wanted to instead. We don't need to put the values in `c()` like we would with `[]` (but we could).
-
-```{r}
-select(cer, 1, 4, 10)
-```
-
-To exclude columns:
-
-```{r}
-select(cer, -Age_of_Respondents)
-
-names(select(cer, -Age_of_Respondents))
-```
-
-Finally, select can also be used to reorder columns, such as:
-
-```{r}
-select(cer, Is_Diagnosed_with_STDs, everything())
-
-names(select(cer, Is_Diagnosed_with_STDs, everything()))
-```
-
-`everything()` is a helper function that lets us choose column with names that meet different criteria.  `everything()` gets all columns.  There are others.  For example:
-
-```{r}
-select(cer, starts_with("Is_"))
-
-names(select(cer, starts_with("Is_")))
-```
-
-
-### EXERCISE
-
-Convert this base R expression: `cer[ ,c("Is_Smoking", "Smoking_in_Years", "Smoking_in_Packs_per_Year")]` to use `select()` instead to do the same thing.
-
-
-```{r}
-
-```
-
-
-### Pipe Operator
-
-Before we learn other dplyr commands, we need to learn a new operator - the pipe.  `dplyr`, and other tidyverse commands, can be strung together in a series with a `%>%` (say/read: pipe) operator. (If you are familiar with working in a terminal/at the command line, it works like a bash pipe character `|`.) It takes the output of the command on the left and makes that the first input to the command on the right.
-
-The pipe works well with dplyr (and other tidyverse packages) because the functions almost all take a data frame as the first input, and they return a data frame as the output.
-
-But it can be used with other functions as well.  
-
-We can rewrite
-
-```{r}
-select(cer, Age_of_Respondents, Number_of_Sexual_Partners)
-```
-
-as
-
-```{r}
-cer %>% select(Age_of_Respondents, Number_of_Sexual_Partners)
-```
-
-and you'll often see code formatted, so `%>%` is at the end of each line, and the following line that are still part of the same expression are indented:
-
-```{r}
-cer %>%
-  select(Age_of_Respondents, Number_of_Sexual_Partners)
-```
-
-We can also pipe to non-tidyverse functions as well:
-
-```{r}
-cer %>%
-  select(-Age_of_Respondents) %>%
-  names()
-```
+The above is OK so far, but when we try to access the column:
 
 ```{r, eval=FALSE}
-cer %>%
-  select(Age_of_Respondents, Number_of_Sexual_Partners) %>%
-  View()
+# gives an error
+healthdata$123
 ```
 
-Or have nothing to do with tidyverse functions:
+Note that "123" above is blue in the code highlighting in RStudio because it looks like a number. We'd also get errors or unintended behavior trying to use a variable named "123" with functions like `select()`.
+
+Invalid names have to be surrounded by backticks to use them with `$` or in functions that reference the column names unquoted. If we wanted to reference this variable, we'd need to do:
 
 ```{r}
-# mean(is.na(cer$Number_of_Years_with_STDs))
-is.na(cer$Number_of_Years_with_STDs) %>% mean()
+healthdata$`123`
+select(healthdata, `123`)
+```
+
+But this is annoying. It's best to clean up any invalid names either before importing the data file or immediately after
+
+Let's fix the name before moving on:
+
+```{r}
+names(healthdata)[1] <- "id"
+```
+
+### Tip: clean_names()
+
+There is a function called `clean_names()` in the janitor package that takes a data frame as input and returns a data frame as output, with the column names cleaned up: names are converted to all lower case, with underscores where there were any spaces; characters are converted to ASCII equivalents (for example, é becomes e); an "x" will be added before any names starting with a number. Other clean up options are also available. Even if a data frame has valid names, this function can be useful to standardize them all to the same style and standards.
+
+# Data Frames: Change the Values of an Existing Column
+
+How we modify an existing variable in the data frame depends on whether we want to change all of the values or just specific values (like `NA`).
+
+## Changing All Values
+
+If we can use a function or operation that will return either a single value that we want to use for ALL rows, or a vector of the same length as the original variable (the number of rows in the data frame), we can assign the new value(s) to the column vector.
+
+For example, the weight variable in the dataset is in kg. Multiply all of the values by 2.2 to convert it to pounds:
+
+```{r}
+healthdata$weight <- healthdata$weight * 2.2
+```
+
+## Modifying Column Types
+
+One specific way we might change all of the values in a variable/column is by changing the data type of the column. There is a series of functions that will convert data to a specific type. For example: `as.character()`, `as.numeric()`, `as.integer()`, `as.logical()`
+
+The id variable is currently a numeric (integer) type. But we wouldn't want to use it as a number. Let's convert it to character data:
+
+```{r}
+head(healthdata$id)
+healthdata$id <- as.character(healthdata$id)
+head(healthdata$id)
+```
+
+## mutate()
+
+We can also change variables with the `mutate()` function from the dplyr package. `mutate()` returns a copy of the data frame with the modification. To make this change affect the data frame for future operations, we need to save the result back to the data frame:
+
+```{r}
+# just return a modified copy
+mutate(healthdata, height = height / 2.54)  # convert cm to inches
+
+# save the change
+healthdata <- mutate(healthdata, height = height / 2.54)
+```
+
+## TRY IT
+
+Change back the variables we modified above: divide weight by 2.2, multiply height by 2.54, and convert the id variable back to an integer type
+
+```{r}
+
+```
+
+## Tip: What if you make a mistake?
+
+What if you make a mistake and mess up your data frame? Just import the data again, and re-run any other code you may have written. This is one reason we keep track of what we do in an R script or notebook.
+
+```{r}
+healthdata <- read.csv("data/nhanes.csv")
+```
+
+## Changing Specific Values
+
+To change just specific values in a column, we select the values we want to change, and then assign a new value to them. This is most commonly done when we want to recode one or just a few specific values.
+
+For example, we could replace missing `NA` values in a variable with a special code:
+
+```{r}
+head(healthdata$bp_sys1, n=20)  # see that there are missing
+healthdata$bp_sys1[is.na(healthdata$bp_sys1)] <- 9999
+head(healthdata$bp_sys1, n=20)  # check that they changed
+```
+
+The above is just an example - usually we'd be recoding values like 9999 to `NA` instead!
+
+```{r}
+# change it back
+healthdata$bp_sys1[healthdata$bp_sys1 == 9999] <- NA
+```
+
+We could supply a vector, instead of a single value, on the right, but it can be easy to make a mistake that way if the length of the two sides doesn't match up correctly.
+
+Note that this approach doesn't work with `mutate()`. `mutate()` always requires the right-hand side of the assignment to be either a single value or a vector of the same length as the original.
+
+## ifelse()
+
+Subsetting a vector and then assigning a value to that subset can be a bit cumbersome. The `ifelse()` function allows us to use the same syntax as if we were changing all of the values in a vector, while only changing some. `ifelse()` also works with `mutate()`.
+
+`ifelse()`allows you to change the values of a vector based on a conditional test.
+
+```{r, eval=FALSE}
+ifelse(test_condition, value_if_true, value_if_false)
+```
+
+Example:
+
+```{r}
+ifelse(healthdata$sleep_hours >= 8, "8+ hours", "<8 hours")
+```
+
+To use `ifelse()` to modify the values of a vector, a common use is:
+
+-   if some condition is TRUE,
+-   then return a new value
+-   otherwise return the original value
+
+This code will recode all `NA` values in `healthdata$bp_sys1` to 9999 and leave all other values unaffected:
+
+```{r}
+healthdata$bp_sys1 <- ifelse(is.na(healthdata$bp_sys1), 9999, healthdata$bp_sys1)
+
+# or 
+mutate(healthdata, by_sys1 = ifelse(is.na(bp_sys1), 9999, bp_sys1))
+```
+
+If the test condition results in `NA`, then the output of `ifelse()` is `NA`.
+
+## TRY IT
+
+1.  Use `ifelse()` to recode the 9999 values in bp_sys1 to `NA`
+
+2.  Recode missing values in `healthdata$health_level` to "Unknown" using `ifelse()`
+
+```{r}
+
+```
+
+# Data Frames: Add a Column
+
+To add a column, simply name it and assign a value to it:
+
+```{r}
+healthdata$long_sleeper <- healthdata$sleep_hours > 8
+names(healthdata)
 
 # or
-cer$Number_of_Years_with_STDs %>% is.na() %>% mean()
+mutate(healthdata, long_sleeper = sleep_hours > 8)
 ```
 
+The column will be added to the far right of the data frame.
 
-The pipe comes from a package called `magrittr`, which has additional special operators in it that you can use. The keyboard shortcut for `%>%` is command-shift-M (Mac) or control-shift-M (Windows).  The `%>%` operator is available when you load tidyverse.
+# Data Frames: Removing Rows or Columns
 
-There is also (now) a built-in pipe operator in R: `|>`.  There are some small nuances between the two pipe operators, but for most purposes, they work the same way.  
+To remove rows or columns from a data frame, create the subset of the data frame that you want, and then assign that result to a variable -- either the same data frame name to overwrite the original data frame (only in the R session, it doesn't change the file) or to a new name.
 
 ```{r}
-cer |> 
-  select(Age_of_Respondents, Number_of_Sexual_Partners) |>
-  View()
+males <- healthdata[healthdata$gender == "male", ]
 ```
 
+Avoid saving multiple subsets of the data with different names. Having multiple copies or versions of a dataset in the environment makes your code harder to follow, can result in mistakes by choosing or modifying the wrong subset, and can use a lot of memory with larger data sets. Instead, subset or modify the data just when needed.
 
-### Mutate: add/modify columns
+# Data Frames: Reorder Columns
 
-`mutate()` is used to both change the values of an existing column and make a new column.
+Most of the time, there is no need to reorder columns in a data frame. If you want to, you can subset the columns in the order you want, and then reassign the result back to the same variable name.
 
-We name the column we're mutating and set the value. If the name already exists, it will update the column. If the name doesn't exist, it will create a new variable (column is appended at the end of the existing columns).
-
-```{r, eval=TRUE}
-cer %>% 
-  mutate(is_minor = Age_of_Respondents < 18) %>% 
-  names() # look at column names
-```
-
-We can put multiple mutations in the same call to mutate, with the expressions separated by commas:
-
-```{r,  eval=TRUE}
-cer %>% 
-  mutate(is_minor = Age_of_Respondents < 18,
-         is_senior = Age_of_Respondents > 65) %>% 
-  names()
-```
-
-And we can use functions as needed:
+Example:
 
 ```{r}
-cer %>%
-  mutate(is_minor = Age_of_Respondents < 18,
-         is_minor = factor(is_minor, levels=c(TRUE, FALSE), 
-                           labels=c("minor", "adult"))) %>%
-  select(is_minor)
+healthdata <- healthdata[ , c(4, 2, 3, 1, 5:ncol(healthdata))]
 ```
 
-Note above that we refered to the is_minor variable we just created again within the same call to mutate().
+`5:ncol(healthdata)` selects the 5th through the last column.
 
-### EXERCISE
+## select()
 
-Convert the column Is_Smoking to a logical data-type
-
-Hint: Use `as.logical` for type-conversion.
+The `select()` function from dplyr can also be used to reorder columns. There's a helper function, `everything()`, that is a convenient shorthand for including all other columns beyond the ones named, putting them at the end in the original order:
 
 ```{r}
-
+select(healthdata, age, age_decade, gender, everything())
 ```
 
-### Mutate: save the output
+# Pipe Operator
 
-The above commands didn't actually change the cer data frame:
+As you put together more complex expressions with R, nesting function calls can make code hard to read, because it flips the order of the steps: the last operation ends up on the outside.
+
+Instead, we can use a "pipe" operator to chain together commands in order. The operator takes the output from a command on the left and makes it the first input to the function on the right.
+
+The built-in version of this operator is `|>`. Another version of the operator that is commonly used, which comes from a package that's installed with tidyverse, is `%>%`. `%>%` has some additional capabilities that `|>` doesn't, but they work the same for the situations we'll discuss here.
 
 ```{r}
-names(cer)
+# instead of:
+round(log(10))
+
+# with pipe
+log(10) |> round()
+log(10) %>% round()
 ```
 
-If we want to save the changes, we need to assign the output of the function back to the data frame: 
+The left hand side, `log(10)` is computed, and the output becomes the first input to the `round()` function on the right hand side.
+
+Other inputs can also be used:
 
 ```{r}
-cer <- cer %>% 
-  mutate(is_minor = Age_of_Respondents < 18,
-         is_senior = Age_of_Respondents > 65)
+log(10) |> round(digits=3)
 ```
 
-Note that the output of the mutate() command is the entire data frame, so we're saving back the entire data frame, not a single column.
+Using the pipe operator means that we can think about the steps we need to take with the data, and then have those steps show up in that order in the code.
 
-### Summarize
+::: callout-tip
+## RStudio Tip: Pipe Shortcut
 
-We can use functions as part of mutate if we want to transform a column, but how do we use functions like mean() that return a single value, instead of one value for each row?
+The keyboard shortcut to type a pipe operator in RStudio is Ctrl + Shift + M (Windows) or Cmd + Shift + M (Mac). This will insert `%>%` by default. To change to `|>`, go to the Tools menu \> Global Options \> Code \> Use Native Pipe Operator
+:::
 
-That's what summarize is for:
+## TRY IT
+
+Convert the following expression to use the pipe operator instead:
 
 ```{r}
-cer %>%
-  summarize(mean(Age_of_Respondents))
+max(round(healthdata$weight), na.rm=TRUE)
+
+
 ```
 
-We can rename the output:
+## Pipe with Tidyverse
+
+dplyr functions, like `select()`, `filter()`, and `mutate()` take a data frame as their first input and return a data frame. This means they can be chained together easily with the pipe operator.
 
 ```{r}
-cer %>%
-  summarize(avg_age = mean(Age_of_Respondents))
+filter(healthdata, gender == "male") %>%
+  select(height, weight)
 ```
 
-And compute more than one thing at once:
+Note that the data frame name is omitted from `select()` because the data frame that results from `filter()` is that first input because of the pipe operator.
+
+To make it clearer what data frame you're working with, it's common to put the data frame by itself at the start of a chain of dplyr commands:
 
 ```{r}
-cer %>%
-  summarize(avg_age = mean(Age_of_Respondents),
-            avg_partners = mean(Number_of_Sexual_Partners))
+healthdata %>%
+  filter(gender == "male") %>%
+  select(height, weight)
 ```
 
-There's that NA again:
+Remember: Order matters - if you want to filter using a particular column, make sure you don't remove it with select before the filter step 😀
 
-```{r}
-cer %>%
-  summarize(avg_age = mean(Age_of_Respondents),
-            avg_partners = mean(Number_of_Sexual_Partners, na.rm=TRUE))
-```
+## TRY IT
 
-We can use any combination of variables and functions within the same summarize function call:
-
-```{r}
-cer %>%
-  summarize(min_age = min(Age_of_Respondents, na.rm=TRUE), 
-            max_age = max(Age_of_Respondents, na.rm=TRUE),
-            avg_age = mean(Age_of_Respondents),
-            avg_partners = mean(Number_of_Sexual_Partners, na.rm=TRUE))
-```
-
-
-### EXERCISE
-
-What is the average number of years smoking?
+Subset the healtdata data frame to contain the the education and marital_status for participants younger than 22.
 
 ```{r}
 
 ```
 
+# Save a Data Frame
 
+To save a data frame to a CSV file, use the `write.csv()` function.
 
-## Chaining Commands Together
-
-We can use the pipe to string together multiple commands operating on the same data frame:
-
-```{r}
-cer %>%
-  select(Age_of_Respondents, Number_of_Sexual_Partners) %>%
-  mutate(is_minor = Age_of_Respondents < 18)
+```{r, eval=FALSE}
+write.csv(healthdata[healthdata$gender == "male", ], 
+          file="male_respondents.csv",
+          row.names = FALSE)  # don't number the rows in the output
 ```
 
-We would read the `%>%` in the command above as "then" if reading the code out loud: from cer, select Age_of_Respondents and Number_of_Sexual_Partners, then mutate to add a new column is_minor where Age_of_Respondents is less than 18.
+The file is saved in your working directory; include directories in the file path to direct the output elsewhere.
 
-This works because the dplyr functions take a tibble/data frame as the first argument (input) and return a tibble/data frame as the output. This makes it easy to pass a data frame through multiple operations, changing it one step at a time.
+If you want to work with the resulting file in Excel, it's still recommended to save a CSV file, instead of an Excel file, as Excel can easily open a CSV file.
 
-Order does matter, as the commands are executed in order. So this would give us an error, because we're trying to modify a column that we didn't select:
+It is HIGHLY recommended to save a data frame to a new file; do NOT overwrite the original CSV or Excel file that you read into R and modified (meaning use a different file name when you save the file). Overwriting the original file would prevent you from undoing any changes and prevents you from replicating your workflow, since the complete workflow would use two different versions of the same file.
 
-```{r}
-cer %>%
-  select(Is_Smoking, Smoking_in_Packs_per_Year) %>%
-  mutate(is_minor = Age_of_Respondents < 18)
-```
+# Working with Text
 
-We'd have to reverse the order:
+## paste()
+
+`paste()` is used to join, or concatenate, pieces of text together into a single string. It works element-wise on vectors.
 
 ```{r}
-cer %>%
-  mutate(is_minor = Age_of_Respondents < 18) %>% 
-  select(Is_Smoking, Smoking_in_Packs_per_Year)
+paste("Participant", healthdata$id, "is", healthdata$age, "years old")
 ```
 
-
-Reminder: Sometimes we may still want to save the result of some expression, such as after performing a bunch of data cleaning steps. We can assign the output of piped commands as we would with any other expression:
+The default separator between the elements is a space.
 
 ```{r}
-cer_subset <- cer %>%
-  mutate(is_minor = Age_of_Respondents < 18) %>% 
-  select(Age_of_Respondents, Smoking_in_Packs_per_Year, is_minor)
+paste(healthdata$gender, healthdata$age, sep=", ")
 ```
 
+There is a shorthand for the common situation where you want to join the pieces of text without any separator between them: `paste0()`
 
+```{r}
+paste0(healthdata$height, "cm")
+```
+
+## TRY IT
+
+Format `bp_sys1` and `bp_dia1` in a blood pressure reporting format, like 120/80
+
+```{r}
+
+```
+
+## str_replace()
+
+To edit character/text data, functions from the `{stringr}` package (which is installed as part of tidyverse), are helpful - to replace a character or substring use `str_replace`:
+
+```{r}
+library(stringr)
+
+str_replace(healthdata$age_decade, "-", " to ")
+```
+
+If you know regular expressions for pattern matching, the `{stringr}` functions can be used with regular expressions as well. (Regular expressions are really useful if you work with text data.)
+
+If you want to remove a character or substring instead of replace it, use `str_remove()` instead.
+
+## TRY IT
+
+Replace the underscore "\_" in survey_year with a dash "-"
+
+```{r}
+
+```
+
+# Sorting
+
+To sort the values of a vector, use `sort()`:
+
+```{r}
+sort(healthdata$age)
+sort(healthdata$age, decreasing = TRUE)
+```
+
+`NA` values are dropped by default when sorting:
+
+To sort the rows in a data frame, use the `arrange()` function from the dplyr package:
+
+```{r}
+arrange(healthdata, age)
+arrange(healthdata, desc(age))
+
+arrange(healthdata, age, pulse)
+```
+
+# Unique Values
+
+## unique()
+
+`unique()` returns the set of distinct values in a vector:
+
+```{r}
+unique(healthdata$sleep_hours)
+```
+
+`NA` is included as a value.
+
+If you use `unique()` on a data frame instead of on a vector, it drops fully duplicate rows.
+
+To get the unique values in sorted order, combine with `sort()`:
+
+```{r}
+sort(unique(healthdata$sleep_hours))
+```
+
+Note that when sorting, `NA` values are dropped.
+
+To count the number of distinct values, combine with `length()`:
+
+```{r}
+length(unique(healthdata$sleep_hours))
+```
+
+## n_distinct()
+
+The `n_distinct()` function from the dplyr package is a useful shortcut when you want `length(unique(...))`:
+
+```{r}
+n_distinct(healthdata$sleep_hours)
+```
+
+# Generating Vectors
+
+Generating a vector with a specific sequence of values in it can be useful for some data cleaning/manipulating tasks, and when doing more complex programming or creating simulations in R.
+
+## :
+
+You've already seen the colon operator when subsetting vectors and data frames:
+
+```{r}
+1:4
+-4:7
+```
+
+This creates a vector of integers inclusive of the start and end values. This can be useful if you want to number the rows in a data frame.
+
+## seq()
+
+The `seq()` (sequence) function generalizes what you can do with `:` by allowing you to use values other than integers and specify the spacing between values:
+
+```{r}
+seq(from=0, to=1.5, by=.25)
+```
+
+```{r}
+seq(0, 3, by=.7)
+```
+
+The first value in the output will be the first value (`from`) of the input. The last value of the output will be the last valid value in the sequence less than or equal to the `to` value in the input. There are some additional special cases and variants on how to use the function that you can read about in the documentation.
+
+## rep()
+
+`rep()` (repeat) builds a vector by repeating elements a specified number of times:
+
+```{r}
+rep("a", 4)
+rep(c("a", "b"), 4)       # repeats the whole vector 4 times
+rep(c("a", "b"), each=4)  # repeats each element 4 times
+```
+
+You can also specify more complicated patterns. For example:
+
+```{r}
+rep(6:9, times=1:4)
+```
+
+The first element (6) is repeated 1 time, the second (7) is repeated 2 times, and so on.
