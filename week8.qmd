@@ -1,0 +1,651 @@
+---
+title: "Week 8: Statistical Relationships"
+format:
+  html:
+    embed-resources: true
+editor_options: 
+  chunk_output_type: console
+---
+
+# Setup
+
+```{r}
+library(tidyverse)
+library(janitor)  # this replaces the chisq.test function to make it tidyverse friendly
+```
+
+
+We're going to use penguins data:
+
+```{r}
+penguins <- read_csv("data/penguins_modified.csv")
+```
+
+This dataset is a modified version of the data in the [palmerpenguins package](https://allisonhorst.github.io/palmerpenguins/).  We've made some additions and changes.
+
+```{r, eval=FALSE}
+View(penguins)
+```
+
+Variables:
+
+* species: categorical: Adelie, Chinstrap, Gentoo
+* island: categorical: Biscoe, Dream, Torgersen
+* sex: categorical: female, male
+* year: categorical: 2007, 2008, 2009
+* bill_length_mm: continuous
+* bill_depth_mm: continuous
+* flipper_length_mm: continuous
+* body_mass_g: continuous
+
+Plus some additional fictional variables that were not in the original data:
+
+* body_mass2_g: continuous: a second measure of body mass
+* has_offspring: boolean/logical: TRUE/FALSE
+* health_status: categorical: good, fair, poor
+
+
+# Statistical Relationships
+
+As we explore the relationship between different types of variables, we often want to test whether those relationships are significant: are they real or likely to hold with other data, or are they part of the expected variability and noise in the data?
+
+The type of statistical test we use depends on whether we're working with continuous or categorical variables.
+
+# Correlation: Two Continuous
+
+One way to look at the relationship between two continuous variables is the correlation. 
+
+```{r}
+ggplot(penguins, aes(flipper_length_mm, body_mass_g)) +
+  geom_point()
+```
+
+Correlation looks at whether there is a **linear** relationship.  `cor()` takes two vectors.
+
+```{r}
+cor(penguins$flipper_length_mm, penguins$body_mass_g)
+```
+
+`NA`!
+
+The `NA` options for `cor()` are slightly different than for `mean()` or other similar functions.  The `NA` options are different because `cor()` can also be used with matrices of numeric values.  When computing the correlation between two variables, the option to use is:
+
+```{r}
+cor(penguins$flipper_length_mm, penguins$body_mass_g, use = "pairwise")
+```
+
+Correlation is symmetrical: the order of the variables doesn't matter:
+
+```{r}
+cor(penguins$body_mass_g, penguins$flipper_length_mm, use = "pairwise")
+```
+
+## Correlation Assumptions
+
+The default type of correlation computed with `cor()` is Pearson's correlation.  It assumes:
+
+* Variables are both continuous
+* The variables have a linear relationship (plot the data to check)
+* The variables are roughly normally distributed (also a good time to plot)
+* No notable outliers 
+
+```{r}
+hist(penguins$flipper_length_mm)  # should make us suspicious of groups
+hist(penguins$body_mass_g)
+```
+
+
+When these assumptions are violated, you can still compute a correlation, but the result does not meaningfully describe the relationship between the variables, and any hypothesis testing as to whether the variables have a relationship may not be valid.  If the data do not conform to these assumptions, there are other types of correlation measures (more on these below).
+
+
+## Correlation Test
+
+To determine whether a correlation is statistically significant (different from 0), we can use `cor.test()`
+
+```{r}
+cor.test(penguins$flipper_length_mm, penguins$body_mass_g, use = "pairwise")
+```
+
+In addition to computing the correlation coefficient, which ranges between -1 and 1, it also computes a t statistic (more on these below) and runs a hypothesis test where the null hypothesis is that there is no correlation between the variables.  p-values < 0.05 are often considered to be statistically significant, meaning that there is less than a 5% chance of seeing the given correlation statistic if there was truly no relationship between the two variables.
+
+The result is affected by how many observations are included; if you have enough observations, even very small correlations will be statistically significant even if they're aren't substantively significant.
+
+Usually correlation alone is not sufficient for testing the relationship between variables.  While correlation is a good measure to check as part of exploratory analysis of the relationships between variables, usually we'd use more complicated statistical models that let us incorporate other variables as well when making claims about the statistical significance of the relationship between two variables.
+
+We always want to plot the data as well when computing a correlation.  Why?  These all have the same correlation: https://static.scientificamerican.com/sciam/assets/Image/2023/saw0224Math31_d3.png  (This is Anscombe's quartet).
+
+## Correlation with Tidyverse
+
+You can compute a correlation within a Tidyverse workflow:
+
+```{r}
+penguins %>%
+  summarize(correlation = cor(flipper_length_mm, body_mass_g, use="pairwise"))
+
+penguins %>%
+  group_by(species) %>%
+  summarize(correlation = cor(flipper_length_mm, body_mass_g, use="pairwise"))
+```
+
+You'd need to use the broom package to get the output from `cor.test()` into a tidy format, since it produces multiple pieces of output (not just a single value).
+
+## TRY IT
+
+Compute the correlation between bill_length_mm and bill_depth_mm.  Is this correlation statistically different from 0?
+
+```{r}
+
+```
+
+Now, compute the correlation between these variables again *per species*.
+
+```{r}
+
+```
+
+What do you notice?
+
+## Correlation Matrix
+
+If you want to compute the correlation between multiple continuous variables at the same time, you can create a correlation matrix. You need to ensure that all of the included variables are numeric.
+
+```{r}
+select(penguins, bill_length_mm:body_mass_g)
+# penguins[, 3:6]
+
+select(penguins, bill_length_mm:body_mass_g) %>% 
+  cor(use="pairwise")
+# cor(penguins[, 3:6], use="pairwise")
+```
+
+
+### Bonus: Visualizing a Correlation Matrix
+
+Examples
+
+```{r}
+select(penguins, bill_length_mm:body_mass_g) %>% 
+  cor(use="pairwise") %>%
+  # cor() returns a matrix: make it a data frame
+  as_tibble(rownames = "var1") %>%
+  # ggplot needs data in a particular format:
+  pivot_longer(-var1, names_to="var2") %>%
+  ggplot(aes(x=var1, y=var2, fill=value)) +
+  geom_tile() +
+  # ensuring an appropriate color scale
+  scale_fill_gradient2(low = "blue", 
+                       high = "red", 
+                       mid = "white", 
+                       midpoint = 0, 
+                       limit = c(-1,1), 
+                       space = "Lab", 
+                       name="Correlation") +
+  coord_fixed() + # make squares
+  theme_minimal() +
+  theme(panel.grid = element_blank())
+```
+
+Just one half, since it's symmetric.
+
+```{r}
+select(penguins, bill_length_mm:body_mass_g) %>% 
+  cor(use="pairwise") %>%
+  as_tibble(rownames = "var1") %>%
+  pivot_longer(-var1, names_to="var2") %>%
+  filter(var1 >= var2) %>%  # works because variables are presented in alpha order in the plot
+  ggplot(aes(x=var1, y=var2, fill=value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", 
+                       high = "red", 
+                       mid = "white", 
+                       midpoint = 0, 
+                       limit = c(-1,1), 
+                       space = "Lab", 
+                       name="Correlation") +
+  geom_text(aes(label=round(value, 2))) +  # add values directly
+  coord_fixed() + 
+  theme_minimal() +
+  theme(panel.grid = element_blank())
+```
+
+Or look at packages (ggcorrplot is one example) designed to create these types of plots.
+
+## Rank Correlation
+
+If the assumptions for Pearson's correlation aren't met, there are some other options for computing correlation.
+
+Kendall's rank correlation, usually reported with the Greek letter tau, does not rely on any assumptions about the distribution of the two variables.  It converts values to their rank, and looks at the extent to which observations have values on the two variables that rank similarly.
+
+It captures any type of monotonic relationship between two variables, not just a linear relationship.  Monotonic means that if you look at the slope of the line describing the relationship between two variables, it either never is negative (it's monotonically positive) or never is positive (monotonically negative).  This allows for lines that curve, but not ones where the line bends in the opposite direction it was going before (up or down).
+
+What do we mean by rank?
+
+```{r}
+mab <- penguins %>%
+  filter(species == "Adelie", island == "Biscoe", sex=="male") %>%
+  select(bill_length_mm, bill_depth_mm) %>%
+  mutate(bill_length_rank = rank(bill_length_mm),
+         bill_depth_rank = rank(bill_depth_mm)) 
+
+# original data
+mab %>%
+  ggplot(aes(bill_length_mm, bill_depth_mm)) +
+  geom_point()
+
+# ranks
+mab %>%
+  ggplot(aes(bill_length_rank, bill_depth_rank)) +
+  geom_point()
+```
+
+
+```{r}
+cor(mab$bill_length_mm, mab$bill_depth_mm)
+cor(mab$bill_length_mm, mab$bill_depth_mm, method="kendall")
+```
+
+
+There is another rank correlation, Spearman's correlation, but Kendall's is generally preferred and has better statistical properties.  
+
+
+
+# t-test: Categorical and Continuous
+
+Is the average body mass of female penguins different than that of male penguins?  This is an example of investigating the relationship between a continuous variable (body mass) and a categorical variable (sex). 
+
+Note: proportions look continuous, but they're bounded between 0 and 1, so need to be treated differently.  Count data can also look roughly continuous initially (although limited to integer values), but there are different tests for count data.
+
+To test whether the average body mass of female penguins is different than that of male penguins, we can use a t-test to see how the mean differs across two groups.  The null hypothesis is that there is no difference in the group means.
+
+When using t-tests to compare the means of two samples, the following should be true:
+
+* Observations (rows of the data) are independent of each other 
+* Observations were randomly sampled from their populations
+* The values in the two groups should be approximately normally distributed 
+* Both groups should have approximately equal variances (but there are standard ways to deal with them not being - in fact, the default setting for t.test() is that variances are not equal)
+
+t-test results are fairly robust to stretching the assumption about normality
+
+```{r}
+penguins %>%
+  group_by(sex) %>%
+  summarize(mean(body_mass_g, na.rm=TRUE),
+            sd(body_mass_g, na.rm=TRUE),
+            var(body_mass_g, na.rm=TRUE))
+
+penguins %>%
+  filter(!is.na(sex)) %>%
+  ggplot(aes(body_mass_g)) +
+  geom_histogram() + 
+  facet_grid(rows=vars(sex))
+```
+
+The penguin body mass data is bimodal because there are multiple species of penguins included in the dataset.  It looks like we need to analyze species separately here.
+
+```{r}
+penguins %>%
+  filter(species == "Adelie") %>%
+  group_by(sex) %>%
+  summarize(mean(body_mass_g, na.rm=TRUE),
+            sd(body_mass_g, na.rm=TRUE),
+            var(body_mass_g, na.rm=TRUE))
+
+penguins %>%
+  filter(!is.na(sex), species == "Adelie") %>%
+  ggplot(aes(body_mass_g)) +
+  geom_histogram() + 
+  facet_grid(rows=vars(sex))
+```
+
+This looks better.
+
+The easiest way to specify that we want to compare the average value of a variable between two groups is to use R's formula syntax, which includes a `~`.  `~` is read as "as a function of".  So to test whether average body mass differs as a function of sex:
+
+```{r}
+t.test(body_mass_g ~ sex, 
+       data = filter(penguins, species == "Adelie"))
+```
+
+We can also supply the two vectors of values to compare:
+
+```{r}
+t.test(penguins$body_mass_g[penguins$species == "Adelie" & penguins$sex == "male"],
+       penguins$body_mass_g[penguins$species == "Adelie" & penguins$sex == "female"])
+```
+
+
+The output includes the mean values for each group, a confidence interval on the *difference* between the two means, the test statistic (t - this is what follows a t distribution), df (degrees of freedom for the t distribution), and the p-value.  p-values < 0.05 are often considered to be statistically significant, meaning that there is less than a 5% chance of seeing the given test statistic (t value) if there was truly no difference in means between the two groups.
+
+p-value < 2.2e-16 indicates that the p-value is smaller than the smallest number R can reliably track (with normal operations).
+
+t-tests will drop observations with a missing value on either variable automatically from the analysis; there is no indication in the t-test results that this has happened.  
+
+If the continuous variable has more than 2 groups, you will need a test or model other than a t-test, such as ANOVA.  
+
+## TRY IT
+
+For Chinstrap penguins, does average flipper_length_mm differ by sex? 
+
+```{r}
+
+```
+
+
+## t-test: Accessing Results
+
+If you need the values from the t-test results, instead of copying them from the output in the console, you can extract them from the result of the test.  Save the test result to a variable, and then you can access its components:
+
+```{r}
+t1 <- t.test(penguins$body_mass_g ~ penguins$sex)
+
+# t1 is not a data frame, but we can use some of the same functions/syntax to get components
+names(t1)     # names() works for a variety of objects besides data frames
+t1$statistic  # $ is used generally in R to get a named element from a containing object
+t1$p.value
+```
+
+
+## Single Variable t-test
+
+t-tests can also be used in other situations, such as comparing pre and post measures for participants in an experiment or testing whether a single value, such as the mean of a variable, is different from 0 (or another value).
+
+Instead of comparing the mean of two groups of observations, we can compare whether the mean is different than a specific value.  The specific value of interest is often 0 (the null hypothesis is that the mean is 0), but we can compare the mean to any value (the null hypothesis is that the mean is some other value).
+
+We can specify a comparison value with the `mu` argument, which defaults to 0.
+
+The null hypothesis is that the mean = mu.
+
+```{r}
+t.test(penguins$bill_depth_mm, mu = 17)
+```
+
+
+## One-Sided t-test
+
+For any t-test, the null hypothesis is often of the form that a value (mean, difference in means) is 0 (or another value), so the alternative is that the value isn't 0.  But if we know that it's not possible for the value to be negative (or positive), or have a theoretical reason why we're only testing one direction of the relationship, we can specify the null as, for example, value <= 0.  This will compute the same t test statistic, but the p-value will be cut in half, because we looking at the probability in just one tail of the distribution, not both.
+
+Example: Do penguins' bill depths average more than 17 mm?
+
+```{r}
+t.test(penguins$bill_depth_mm, mu = 17, alternative = "greater")
+```
+
+
+## Paired t-test
+
+A paired t-test is used when you have more than one measurement per observation.  Instead of comparing averages across two groups, we instead test whether the difference between measurement 1 and measurement 2, averaged across observations (people, penguins, etc.), is different than 0 (or another specified value).
+
+There are two body mass measurements in the penguins data:
+
+```{r}
+mean(penguins$body_mass_g, na.rm=TRUE)
+mean(penguins$body_mass2_g, na.rm=TRUE)
+
+t.test(penguins$body_mass_g, penguins$body_mass2_g, paired = TRUE)
+```
+
+It computes the first variable minus the second variable, so the order of the observations needs to be the same in each vector (as it would be if you're taking the vectors from rows of the same data frame).  If the difference is positive, it means that the value of the first variable tends to be higher than the value of the second variable.  
+
+
+## TRY IT
+
+Look at the built in ToothGrowth data.  We want to know: Does supplement type (supp) affect tooth length (len) at the 2.0 dose level?
+
+```{r}
+ToothGrowth
+```
+
+Should we use a t-test with this data?  What type of t-test is appropriate?
+
+```{r}
+
+```
+
+
+## TRY IT
+
+Look at the built-in `sleep` data.  `extra` is the increase of sleep compared to control.  group is which of two drugs they received.  ID is the patient.
+
+```{r}
+sleep
+```
+
+We want to know: Does drug 1 (group == 1) have the same effect on sleep as drug 2 (group == 2)?
+
+Should we use a t-test with this data?  What type of t-test is appropriate?
+
+```{r}
+
+```
+
+
+
+# Chi-squared: Two Categorical
+
+To test whether there is a relationship between two categorical variables, we can use a Chi-squared test.  If the two variables are completely independent of each other, then the way that observations of one variable are distributed across the groups of the second shouldn't vary.   
+
+* Categories of both variables need to be mutually exclusive 
+* Observations need to be independent and randomly sampled
+* With small tables, such as a 2x2, there should be at least 5 observations in each cell of the table
+
+```{r}
+table(penguins$has_offspring, penguins$health_status)
+
+# how TRUE and FALSE observations of has_offspring are distributed across health_status categories
+prop.table(table(penguins$has_offspring, penguins$health_status), 
+           margin = 1)  # 1 = rows
+
+# how different health_status categories are distributed in terms of has_offspring
+prop.table(table(penguins$has_offspring, penguins$health_status), 
+           margin = 2)  # 2 = columns
+```
+
+A Chi-squared test doesn't tell us what the relationship is, just whether there is a difference in proportions across categories between different groups.
+
+```{r}
+chisq.test(penguins$has_offspring, penguins$health_status)
+
+# order doesn't matter
+chisq.test(penguins$health_status, penguins$has_offspring)
+```
+
+It's called a Chi-squared test because the computed test statistic follows a Chi-squared distribution.  
+
+## Fisher's Exact Test
+
+But what if we do have < 5 observations in a cell in the frequency table?  We use Fisher's exact test instead.  Instead of using a formula for estimating the values, it computes the test exactly.
+
+```{r}
+table(penguins$island, penguins$tested_positive)
+
+chisq.test(penguins$island, penguins$tested_positive)  ## gives a warning
+
+fisher.test(penguins$island, penguins$tested_positive)
+```
+
+
+## TRY IT
+
+Is there any relationship between the species and tested_positive variables?
+
+```{r}
+
+```
+
+
+
+# Odds and Relative Risk
+
+When we start looking at the proportion of observations that fall into different groups, there are some additional measures we might be interested in:
+
+* Relative risk (AKA risk ratio, RR): used for comparing if an event is more likely to happen in one group than the other.  It compares the proportion of observations where an event happens across groups.  It is the probability of event in group 1 / probability of event in group 2.  If the event is more likely in group 1, the risk ratio will be greater than 1.  
+* Odds ratio (OR): first computes the odds for each group, which is the ratio of the probability of an event (p) to the probability of not the event (1-p): p/(1-p).  It is the expected number of events/successes for each non-event/failure.  An odds ratio compares the odds for two groups: (p1/(1-p1)) / (p2/(1-p2)).
+
+With our penguins data, let's look at has_offspring as the event.  We're compare Adelie and Chinstrap penguins as our two groups. 
+
+```{r}
+# risk ratio
+a <- sum(penguins$species == "Adelie" & penguins$has_offspring)/sum(penguins$species == "Adelie")
+a
+b <- sum(penguins$species == "Chinstrap" & penguins$has_offspring)/sum(penguins$species == "Adelie")
+b
+a/b
+```
+
+Adelie penguins are 2.375 times more likely than Chinstrap penguins to have offspring.
+
+```{r}
+# odds ratio
+a_odds <- a/(1-a)  # Adelie
+a_odds  # 3 times as many Adelie penguins have offspring than don't have offspring
+
+# or, compute as:
+a_odds <- sum(penguins$species == "Adelie" & penguins$has_offspring)/sum(penguins$species == "Adelie" & !penguins$has_offspring)
+a_odds
+
+b_odds <- b/(1-b) # Chinstrap
+b_odds  # about half as many have offspring as don't
+
+a_odds/b_odds
+```
+
+Adelie penguins have over 6 times the odds of having offspring as Chinstrap penguins (odds is not the same as probability).
+
+If you're computing relative risk or odds ratios, you would generally report them with a confidence interval around the value (you can look up the formulas).  
+
+If you're just computing a single value, RR is generally easier to interpret.  Odds and odds ratios get used because they have other statistical properties and come up in some statistical models and tests.  
+
+Learn more: https://pmc.ncbi.nlm.nih.gov/articles/PMC4640017/
+
+# Practice
+
+Using the health dataset from the [National Health and Nutrition Examination Survey](https://wwwn.cdc.gov/nchs/nhanes/).  We're ignoring study weights that would make this data representative of the population.
+
+Some variables:
+
+* **id**: unique ID for the participant
+* **survey_year**: 2 different survey years: "2009_10" "2011_12"
+* **gender**: male or female
+* **age**: age in years (integer values)
+* **age_decade**: categorical age grouping
+* **education**: education level completed, text values
+* **marital_status**: marital status, text values
+* **work_status**: work status, text values
+* **income_poverty_ratio**: ratio of participant income to the poverty line
+* **weight**: weight in kg
+* **height**: height in cm
+* **pulse**: heart beats per minute 
+* **bp_sys1**: first systolic (top) blood pressure measure
+* **bp_dia1**: first diastolic (bottom) blood pressure measure
+* **bp_sys2**: second systolic (top) blood pressure measure
+* **bp_dia2**: second diastolic (bottom) blood pressure measure
+* **bp_sys3**: third systolic (top) blood pressure measure
+* **bp_dia3**: third diastolic (bottom) blood pressure measure
+* **cholesterol**: total cholesterol, in millimoles per liter (mmol/L); multiply by 38.67 to convert to US measure in mg/dL
+* **health_level**: participant-reported overall health level, categorical
+* **sleep_hours**: number of hours of sleep per weeknight, integer values
+* **sleep_trouble**: binary indicator of whether participant has sleep problems (Yes/No)
+* **physically_active**: binary indicator of whether participant participates in at least moderate physical activities (Yes/No)
+
+
+```{r}
+healthdata <- read_csv("data/nhanes.csv")
+```
+
+
+## Exercise 1
+
+Is the first BP measure different than the second?
+
+```{r}
+
+```
+
+## Exercise 2
+
+Is there a relationship between gender and education?
+
+```{r}
+
+```
+
+
+
+## Exercise 3
+
+Are systolic and diastolic blood pressure readings correlated?
+
+```{r}
+
+```
+
+
+
+## Exercise 4
+
+Is the average weight for male and female different?
+
+```{r}
+
+```
+
+
+## Exercise 5
+
+Do those with a very good ("Vgood") health level have lower cholesterol than those with a "Fair" health level?
+
+```{r}
+
+```
+
+
+## Exercise 6
+
+What is the relative risk of females having sleep trouble to males?
+
+```{r}
+
+```
+
+
+
+## Exercise 7
+
+What is the odds ratio for having sleep trouble for female participants compared to male?
+
+```{r}
+
+```
+
+
+
+## Exercise 8
+
+Is the average systolic blood pressure different than 120?
+
+```{r}
+
+```
+
+
+
+## Exercise 9
+
+Is systolic blood pressure measurement 2 greater than systolic blood pressure measurement 1 on average?
+
+```{r}
+
+```
+
+
+
+## Exercise 10
+
+Is there a relationship between sleep trouble and work status?
+
+```{r}
+
+```
+
+
+

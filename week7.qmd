@@ -1,5 +1,5 @@
 ---
-title: "Week 7"
+title: "Week 7: Summary Measures"
 format:
   html:
     embed-resources: true
@@ -253,18 +253,34 @@ Why such a convoluted framing?  Can't we say:  There's a 95% chance the interval
 
 ```{r}
 sample_stats <- data.frame(sample_mean = NULL, sample_sd = NULL)
-for (i in 1:1000) {
+for (i in 1:1000) { # 1000 times
+  # take a sample of size 100 from a population with normal distribution, mean 1, sd 2
   the_sample <- rnorm(100, mean = 1, sd = 2)
+  # compute the mean and sd of the sample, and store those values
   sample_stats[i,"sample_mean"] <- mean(the_sample)
   sample_stats[i, "sample_sd"] <- sd(the_sample)
 }
+# for each sample, also compute:
+# standard error for the mean
 sample_stats$sem <- sample_stats$sample_sd/10 # 10 = sqrt(100)
+# lower bound of a CI
 sample_stats$lower_ci <- sample_stats$sample_mean - qnorm(.975)*sample_stats$sem
+# upper bound of a CI
 sample_stats$upper_ci <- sample_stats$sample_mean + qnorm(.975)*sample_stats$sem
+# add a column indicating which sample it is (for plotting)
 sample_stats$id <- 1:1000
+# mark whether the computed CI for the sample comtains the true population mean (which was 1)
 sample_stats$contains_pop_mean <- sample_stats$lower_ci < 1 & sample_stats$upper_ci > 1
 sample_stats
 ```
+
+How many CIs do not contain the population mean? (we expect 50 -- 50/1000 is 0.05)
+
+```{r}
+sum(!sample_stats$contains_pop_mean)
+```
+
+Let's visualize:
 
 ```{r}
 ggplot(sample_stats, aes(y=id, x=lower_ci, xend=upper_ci, color=contains_pop_mean)) +
@@ -281,10 +297,6 @@ sample_stats %>%
   ggplot(aes(y=id, x=lower_ci, xend=upper_ci, color=contains_pop_mean)) +
   geom_segment() +
   geom_vline(xintercept = 1)
-```
-
-```{r}
-sum(!sample_stats$contains_pop_mean)
 ```
 
 About 5% of the time, even if we have a perfectly valid random sample from our population, and even if we have a big sample, we'll just randomly get a sample with fairly extreme values, and a 95% CI on the mean will not contain the true population value.
@@ -549,6 +561,44 @@ Examine education and work_status.  Does the proportion of people out of work va
 ```
 
 
+## Confidence Intervals for Proportions
+
+If we're working with proportions, we can't compute a confidence interval on the proportion the same as we would for a mean because proportions are bounded between 0 and 1 (so the confidence interval needs to not extend beyond this range either).
+
+There are a few different methods for computing such a confidence interval.  The first you might come across is called the Wald interval and is the proportion (p) +/- 1.96 (for a 95% interval) * sqrt(p*(1-p)/n)
+
+If we wanted to know the proportion of penguins with offspring, and wanted to compute a confidence interval on that:
+
+```{r}
+p <- sum(penguins$has_offspring)/sum(!is.na(penguins$has_offspring))
+p
+se <- sqrt(p*(1-p)/sum(!is.na(penguins$has_offspring)))
+p + 1.96 * se
+p - 1.96 * se
+```
+
+BUT, this doesn't actually work well in many situations, especially for proportions near 0 or 1.  And it can result in confidence intervals that extend beyond the 0 to 1 range.
+
+Two alternatives are Clopper-Pearson (ensures coverage is *at least* at the computed level -- 95% -- but could be more, so intervals tend to be wider, or more conservative) and Wilson (a variation on Wald, but ensures the CI remains in 0 to 1):
+
+```{r}
+#install.packages("DescTools")
+library(DescTools)
+
+BinomCI(x = sum(penguins$has_offspring),
+        n = sum(!is.na(penguins$has_offspring)),
+        method="clopper-pearson")
+
+BinomCI(x = sum(penguins$has_offspring),
+        n = sum(!is.na(penguins$has_offspring)),
+        method="wilson")
+```
+
+"Binom" because distributions of successes and failures follow a binomial distribution.  
+
+There are other methods and variations as well.  
+
+
 # Practice
 
 Practice computing various statistical summary measures using the healthdata.  
@@ -628,6 +678,15 @@ For married men, what weight would put someone in the upper 20% of values?
 ## Exercise 9
 
 Write an expression to simulate a random roll of a 6-sided die.
+
+```{r}
+
+```
+
+
+## Exercise 10
+
+Compute the proportion of participants with sleep trouble, as well as a 95% confidence interval on the proportion.
 
 ```{r}
 
