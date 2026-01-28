@@ -14,97 +14,21 @@ library(dplyr)
 healthdata <- read.csv("data/nhanes.csv")
 ```
 
-# Pipe Operator
-
-As you put together more complex expressions with R, nesting function calls can make code hard to read, because it flips the order of the steps: the last operation ends up on the outside.
-
-Instead, we can use a "pipe" operator to chain together commands in order. The operator takes the output from a command on the left and makes it the first input to the function on the right.
-
-The built-in version of this operator is `|>`. Another version of the operator that is commonly used, which comes from a package that's installed with tidyverse, is `%>%`. `%>%` has some additional capabilities that `|>` doesn't, but they work the same for the situations we'll discuss here.
-
-```{r}
-# instead of:
-round(log(10))
-
-# with pipe
-log(10) |> round()
-log(10) %>% round()
-```
-
-The left hand side, `log(10)` is computed, and the output becomes the first input to the `round()` function on the right hand side.
-
-Other inputs can also be used:
-
-```{r}
-log(10) |> round(digits=3)
-```
-
-Using the pipe operator means that we can think about the steps we need to take with the data, and then have those steps show up in that order in the code.
-
-::: callout-tip
-## RStudio Tip: Pipe Shortcut
-
-The keyboard shortcut to type a pipe operator in RStudio is Ctrl + Shift + M (Windows) or Cmd + Shift + M (Mac). This will insert `%>%` by default. To change to `|>`, go to the Tools menu \> Global Options \> Code \> Use Native Pipe Operator
-:::
-
-## TRY IT
-
-Convert the following expression to use the pipe operator instead:
-
-```{r}
-max(round(healthdata$weight), na.rm=TRUE)
-
-
-```
-
-## Pipe with Tidyverse
-
-dplyr functions, like `select()`, `filter()`, and `mutate()` take a data frame as their first input and return a data frame. This means they can be chained together easily with the pipe operator.
-
-```{r}
-filter(healthdata, gender == "male") %>%
-  select(height, weight)
-```
-
-Note that the data frame name is omitted from `select()` because the data frame that results from `filter()` is that first input because of the pipe operator.
-
-To make it clearer what data frame you're working with, it's common to put the data frame by itself at the start of a chain of dplyr commands:
-
-```{r}
-healthdata %>%
-  filter(gender == "male") %>%
-  select(height, weight)
-```
-
-Remember: Order matters - if you want to filter using a particular column, make sure you don't remove it with select before the filter step 😀
-
-## TRY IT
-
-Subset the healtdata data frame to contain the the education and marital_status for participants younger than 22.
-
-```{r}
-
-```
-
-# Save a Data Frame
-
-To save a data frame to a CSV file, use the `write.csv()` function.
-
-```{r, eval=FALSE}
-write.csv(healthdata[healthdata$gender == "male", ], 
-          file="male_respondents.csv",
-          row.names = FALSE)  # don't number the rows in the output
-```
-
-The file is saved in your working directory; include directories in the file path to direct the output elsewhere.
-
-If you want to work with the resulting file in Excel, it's still recommended to save a CSV file, instead of an Excel file, as Excel can easily open a CSV file.
-
-It is HIGHLY recommended to save a data frame to a new file; do NOT overwrite the original CSV or Excel file that you read into R and modified (meaning use a different file name when you save the file). Overwriting the original file would prevent you from undoing any changes and prevents you from replicating your workflow, since the complete workflow would use two different versions of the same file.
-
 # Tidyverse
 
 We've seen a few tidyverse functions that are useful when working with data frames: `select()`, `filter()`, `mutate()`, `rename()`. These functions can be useful on their own, but they're most useful when combined together into multi-step workflows.
+
+## Intro to Tidy data
+
+Tidy data is data where:
+
+1.  Each variable is a column; each column is a variable.
+
+2.  Each observation is a row; each row is an observation.
+
+3.  Each value is a cell; each cell is a single value.
+
+Tidy data describes a standard way of storing data that is used wherever possible throughout the [tidyverse](https://www.tidyverse.org/). If you ensure that your data is tidy, you'll spend less time fighting with the tools and more time working on your analysis.
 
 ## Tibbles
 
@@ -184,6 +108,48 @@ Compute the mean and median of both bp_sys1 and bp_sys2
 
 ```
 
+### Across
+
+If we want to apply the same summary functions to multiple columns in our data frame, we can write out all of the summary commands explicitly, or we can use `across()` to select which variables to summarize with which functions. `across()` selects columns using the helper functions you could give to `select()` directly.
+
+```{r}
+na.omit(healthdata) %>% 
+  summarize(across(where(is.numeric), mean))
+```
+
+#### Selecting columns using their names
+
+If you wanted to select columns using their names, put them in a vector (so it's a single input argument):
+
+```{r}
+na.omit(healthdata) %>% 
+  summarize(across(c(sleep_hours, weight), mean))
+```
+
+#### Apply multiple functions to each column
+
+If we want to apply multiple functions to each column, we put their names in a list() together:
+
+```{r}
+na.omit(healthdata) %>% 
+  summarize(across(where(is.numeric), list(mean, sd)))
+```
+
+To fix the names in the output, explicitly name our summary functions in the list:
+
+```{r}
+na.omit(healthdata) %>% 
+  summarize(across(where(is.numeric), list(avg=mean, std=sd)))
+```
+
+### TRY IT
+
+Calculate the mean and standard deviation for all numeric columns in the healthdata.
+
+```{r}
+
+```
+
 ## Multi-step Operations
 
 What about computing summary statistics on a subset of the data? To do that, we need to combine multiple functions. Use the pipe operator (`%>%` or `|>`) to combine multiple commands.
@@ -241,6 +207,18 @@ healthdata %>%
 
 The rows have all combinations of the two grouping variables that exist in the data.
 
+### Ungrouping
+
+If you ever have a grouped data frame, you may need to ungroup it to get rid of the groups. To do so, use `ungroup()`:
+
+```{r}
+healthdata %>% 
+  group_by(gender) %>% 
+  ungroup()
+```
+
+Usually this would come up after more complicated operations, and often after computing summary measures by group.
+
 ## TRY IT
 
 Compute the mean of `bp_sys1` by `age_decade`
@@ -277,6 +255,28 @@ healthdata %>%
 ## TRY IT
 
 How many participants have each work_status?
+
+```{r}
+
+```
+
+### n()
+
+A useful helper function with summarize is n() which counts the number of rows. It can be useful in computing proportions.
+
+```{r}
+healthdata %>% 
+  mutate(sleep_enough = if_else(sleep_hours >= 8, 1, 0)) %>% 
+  summarize(
+    sleep_enough_count = sum(sleep_enough == 1, na.rm = TRUE),
+    total_obs = n(),
+    sleep_enough_prop = sleep_enough_count / n()
+  )
+```
+
+### TRY IT
+
+Calculate the proportion of people that have a cholesterol level higher than 5 mmol/L
 
 ```{r}
 
@@ -334,4 +334,57 @@ With two variables, you just get counts:
 
 ```{r}
 tabyl(healthdata, gender, work_status)
+```
+
+## Row-wise operations
+
+dplyr is better suited to perform operations over columns. Performing operations over rows is more difficult.
+
+### `rowwise` as a special type of grouping
+
+```{r}
+healthdata %>% 
+  rowwise()
+```
+
+Notice that the output tells you that it's grouped rowwise. This is a special type of grouping where each group consists of a single row.
+
+Like `group_by`, `rowwise` is not useful by itself, but when you combine it with some of the other `dplyr` functions. Let's take a look at how it changes the behavior of `mutate`:
+
+```{r}
+healthdata %>% 
+  mutate(bp_dia_avg = mean(c(bp_dia1, bp_dia2, bp_dia3), na.rm = TRUE)) %>% 
+  select(contains("dia"))
+```
+
+It computed the mean of each column across all rows. Not what we wanted!
+
+```{r}
+healthdata %>% 
+  rowwise() %>% 
+  mutate(bp_dia_avg = mean(c(bp_dia1, bp_dia2, bp_dia3), na.rm = TRUE)) %>% 
+  select(contains("dia"))
+```
+
+Now it computed the mean for each group/row, which is what we wanted!
+
+### Summary statistics per row
+
+You can also use `rowwise` in combination with `summarize` to calculate summary statistics per row:
+
+```{r}
+healthdata %>% 
+  rowwise() %>% 
+  summarize(bp_dia_avg = mean(c(bp_dia1, bp_dia2, bp_dia3), na.rm = TRUE))
+```
+
+### TRY IT
+
+Using `example_df` below, use `mutate` or `summarize` to calculate the sum of `w`, `x`, `y`, and `z` per row.
+
+Challenge: use [`c_across`](https://dplyr.tidyverse.org/reference/c_across.html) to avoid typing all the column names.
+
+```{r}
+example_df <- tibble(id = 1:6, w = 10:15, x = 20:25, y = 30:35, z = 40:45)
+example_df
 ```
