@@ -1,53 +1,11 @@
 ---
-output:
-  html_document:
-    df_print: paged
-    code_download: TRUE
-    toc: true
-    toc_depth: 1
-editor_options:
+title: "Week 6"
+format:
+  html:
+    embed-resources: true
+editor_options: 
   chunk_output_type: console
 ---
-
-```{r}
-library(tidyverse)
-library(palmerpenguins)
-```
-
-This is a catch-all week to cover a few useful things we haven't covered explicitly so far.
-
-# ifelse
-
-A useful function for recoding variables is ifelse(). It allows us to set the value of a varible based on some test:
-
-```{r}
-# ifelse(test, value if true, value if false)
-
-x <- 1:10
-x
-
-ifelse(x > 5, 100, 0)
-ifelse(x > 5, 100, x) # leave small values alone 
-
-x <- sample(c(1:10, NA), replace=TRUE, 30)
-x
-x <- ifelse(is.na(x), 0, x)  # replace NA values with 0
-x
-
-# without ifelse:
-x <- sample(c(1:10, NA), replace=TRUE, 30)
-x
-x[is.na(x)] <- 0
-x
-```
-
-## Exercise
-
-Make a new variable in the penguins data frame that labels penguins with body_mass_g \> 4000 as "large" and other penguins as "small"
-
-```{r}
-
-```
 
 # Factors
 
@@ -65,7 +23,9 @@ Note that the last answer is invalid - `No` was not one of the four answers that
 table(smoke)
 ```
 
-But the categories are not presented in the correct order! There is a clear order between the different categories, *Never* \< *Occasionally* \< *Regularly* \< *Heavy*, but `table` doesn't present the results in that way. Moreover, R didn't recognize that `No` was an invalid answer, and treats it just the same as the other categories. This is where `factor` variables come in. They allow you to specify which values your variable can take, and the ordering between them (if any).
+But the categories are not presented in the correct order! There is a clear order between the different categories, *Never* \< *Occasionally* \< *Regularly* \< *Heavy*, but `table` doesn't present the results in that way. Moreover, R didn't recognize that `No` was an invalid answer, and treats it just the same as the other categories. This is where `factor` variables come in.
+
+**Fcators allow you to specify which values your variable can take, and the ordering between them (if any).**
 
 ### Creating Factors
 
@@ -230,26 +190,20 @@ age_group <- c(
 
 ### EXERCISE
 
-Using the `cer` dataset, convert the columns `Number_of_STD_Diagnosis` into a factor. Assume the missing values are 0 STDs.
+Convert the variable `marital_status` in healthdata into a factor.
 
 ```{r}
-cer <- read_csv("data/cervical_cancer_data.csv")
+healthdata <- readr::read_csv("data/nhanes.csv")
 
+# your code here
 
 ```
 
 ### EXERCISE
 
-Using the `cer` dataset, convert the column `Number_of_Pregnancies` to a factor. Then recode all `NA` values into "invalid".
+Convert the variable `health_level` into an ordered factor which can be used for comparisions. Recode any missing values to "Unknown".
 
 ```{r}
-# make a factor
-
-# add NA as an explicit level
-
-
-# recode NA into "Invalid Answer"
-
 
 ```
 
@@ -258,20 +212,128 @@ Using the `cer` dataset, convert the column `Number_of_Pregnancies` to a factor.
 Sometimes we have categorical variables that are encoded in our data with integer values -- for example, 0/1 indicator variables or answers like 1, 2, 3, 4, to a survey question. It's helpful to change these numerical values to text labels so we don't confuse anything. And we don't want to erroneously treat these variables as numerical when they're really categorical. We can do this with factors as well.
 
 ```{r}
-my_study <- data.frame(id = c(1, 2, 3, 4, 5),
-                       study_condition = c(0, 1, 0, 0, 1),
-                       outcome = c(4, 6, 3, 4, 6))
+my_study <- 
+  data.frame(
+    id = c(1:5),
+    study_condition = c(0, 1, 0, 0, 1),
+    outcome = c(4, 6, 3, 4, 6)
+  )
+my_study
 
 table(my_study$study_condition)  # which is treatment and which is control?
 
-my_study$study_condition <- factor(my_study$study_condition, 
-                                   levels = c(0, 1),
-                                   labels = c("control", "treatment"))
+my_study$study_condition <- 
+  factor(my_study$study_condition, levels = c(0, 1), labels = c("control", "treatment"))
+
 # make sure levels and labels are in the same order above, or, even better:
-my_study$study_condition <- factor(my_study$study_condition, 
-                                   labels = c("0"="control", "1"="treatment"))
+my_study$study_condition <- 
+  factor(my_study$study_condition, labels = c("0"="control", "1"="treatment"))
 
 table(my_study$study_condition) # much better!
+```
+
+## Forcats
+
+Base R provides some basic tools for creating and manipulating factors. We’ll supplement these with the **forcats** package, which is part of the core tidyverse. It provides tools for dealing with **cat**egorical variables (and it’s an anagram of factors!) using a wide range of helpers for working with factors.
+
+```{r}
+library(forcats)
+healthdata <- readr::read_csv("data/nhanes.csv")
+```
+
+### Inspect factors
+
+```{r}
+# count
+fct_count(healthdata$health_level)
+fct_count(healthdata$health_level, sort = TRUE, prop = TRUE)
+
+# get unique values
+fct_unique(healthdata$health_level)
+```
+
+### Change the order of levels
+
+Let's say you want to visualize the frequency counts of marital status in healthdata. While a standard barplot works, it would be more helpful the graph was ordered by category counts in increasing or decreasing order.
+
+`fct_infreq` orders the factor levels in increasing order of frequency. While `fct_rev` simply reverses the existing order of levels.
+
+```{r}
+# marital status counts
+ggplot(healthdata, aes(y = marital_status)) + 
+  geom_bar()
+
+# marital status counts - ordered by frequency
+ggplot(healthdata, aes(y = fct_infreq(marital_status))) + 
+  geom_bar()
+
+# marital status counts - ordered by frequency - then reversed
+ggplot(healthdata, aes(y = fct_rev(fct_infreq(marital_status)))) + 
+  geom_bar()
+```
+
+Sometimes, it is useful to change the order of a factor variable based on the value of some other variable in your data.
+
+```{r}
+# cholesterol by group
+healthdata %>% 
+  group_by(marital_status) %>% 
+  summarise(
+    cholesterol = mean(cholesterol, na.rm =T)
+  ) %>% 
+  ggplot(aes(x = cholesterol, y = marital_status)) + 
+  geom_point(size = 3) +
+  ylab("Marital Status")
+
+# cholestrol by group - ordered by cholestrol value
+healthdata %>% 
+  group_by(marital_status) %>% 
+  summarise(
+    cholesterol = mean(cholesterol, na.rm =T)
+  ) %>% 
+  ggplot(aes(x = cholesterol, y = fct_reorder(marital_status, cholesterol))) + 
+  geom_point(size = 3) +
+  ylab("Marital Status")
+```
+
+### Change the value of levels
+
+Add NA as an explicit level
+
+```{r}
+smoke
+levels(factor(smoke))
+# convert missing values into a factor level
+fct_na_value_to_level(smoke) %>% levels()
+
+# ideally recode non-permissible values before adding NA as an explicit level
+factor(smoke, levels = c("Never", "Occasionally", "Regularly", "Heavy")) %>% 
+  fct_na_value_to_level()
+```
+
+### Combining levels
+
+Sometimes, it is useful to lump several infrequent levels into a single level. For example, to reduce the total number of categories displayed in a plot. The argument `n` is the number of levels we want to keep.
+
+```{r}
+View(starwars)
+
+fct_unique(starwars$skin_color) # 31 levels!
+
+# limit to 5 most-frequent categories
+starwars  %>% 
+  mutate(skin_color = fct_lump(skin_color, n = 5))  %>% 
+  count(skin_color, sort = TRUE)
+
+# limit to categories representing at least 0.1 proportion of the data (10%)
+starwars  %>% 
+  mutate(skin_color = fct_lump(skin_color, prop = .1)) |>
+  count(skin_color, sort = TRUE)
+
+# rename the "Other" level
+starwars  %>% 
+  mutate(skin_color = fct_lump(skin_color, prop = .1, other_level = "extra")) |>
+  count(skin_color, sort = TRUE)
 ```
 
 # Missing Values
