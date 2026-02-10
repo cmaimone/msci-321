@@ -33,15 +33,15 @@ Variables:
 
 # Overview
 
-These exercises cover the core concepts discussed in the workshop. The goal is for you to be able to complete these tasks independently by the end of the workshop. There is an answer key of sorts, but there are multiple ways to accomplish each task. Asking the workshop instructors for help is preferred to looking at the answer key.
+These exercises cover the core concepts discussed in the class. The goal is for you to be able to complete these tasks independently. There is an answer key of sorts, but there are multiple ways to accomplish each task. Asking the instructors for help is preferred to looking at the answer key.
 
-Challenge exercises typically require multiple steps or putting together concepts in a way not directly demonstrated in the workshop materials.
+Challenge exercises typically require multiple steps or putting together concepts in a way not directly demonstrated in the class materials.
 
 # Exercises
 
 ## Exercise: Create a Project
 
-Create a new RStudio project. When creating the project, choose the option to "Open in new session". This will result in two copies of RStudio running on your computer, so that you can switch back and forth between the two projects during the workshop.
+Create a new RStudio project. When creating the project, choose the option to "Open in new session". This will result in two copies of RStudio running on your computer, so that you can switch back and forth between the two projects during the class.
 
 Create a R script file in the new project where you will write the code for the following exercises.
 

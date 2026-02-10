@@ -18,7 +18,7 @@ This is a catch-all week to cover a few useful things we haven't covered explici
 
 # ifelse
 
-A useful function for recoding variables is ifelse().  It allows us to set the value of a varible based on some test:
+A useful function for recoding variables is ifelse(). It allows us to set the value of a varible based on some test:
 
 ```{r}
 # ifelse(test, value if true, value if false)
@@ -41,16 +41,13 @@ x[is.na(x)] <- 0
 x
 ```
 
-
 ## Exercise
 
-Make a new variable in the penguins data frame that labels penguins with body_mass_g > 4000 as "large" and other penguins as "small"
+Make a new variable in the penguins data frame that labels penguins with body_mass_g \> 4000 as "large" and other penguins as "small"
 
 ```{r}
 
 ```
-
-
 
 # Factors
 
@@ -181,7 +178,6 @@ levels(smoke_factor)
 smoke_factor
 ```
 
-
 ### Combining levels
 
 Finally, `levels` can be used to merge categories by replacing their separate names with a single name. For instance, we can combine the smoking categories *Occasionally*, *Regularly*, and *Heavy* to a single category named *Yes*. Assuming that these are first, second and third in the list of names (as will be the case if you've run the last code chunk above), here's how to do it:
@@ -203,7 +199,6 @@ levels(smoke_factor)
 smoke_factor
 table(smoke_factor)
 ```
-
 
 ### EXERCISE
 
@@ -235,7 +230,7 @@ age_group <- c(
 
 ### EXERCISE
 
-Using the `cer` dataset, convert the columns `Number_of_STD_Diagnosis` into a factor.  Assume the missing values are 0 STDs.
+Using the `cer` dataset, convert the columns `Number_of_STD_Diagnosis` into a factor. Assume the missing values are 0 STDs.
 
 ```{r}
 cer <- read_csv("data/cervical_cancer_data.csv")
@@ -260,7 +255,7 @@ Using the `cer` dataset, convert the column `Number_of_Pregnancies` to a factor.
 
 ## Factor Labels
 
-Sometimes we have categorical variables that are encoded in our data with integer values -- for example, 0/1 indicator variables or answers like 1, 2, 3, 4, to a survey question.  It's helpful to change these numerical values to text labels so we don't confuse anything.  And we don't want to erroneously treat these variables as numerical when they're really categorical.  We can do this with factors as well.  
+Sometimes we have categorical variables that are encoded in our data with integer values -- for example, 0/1 indicator variables or answers like 1, 2, 3, 4, to a survey question. It's helpful to change these numerical values to text labels so we don't confuse anything. And we don't want to erroneously treat these variables as numerical when they're really categorical. We can do this with factors as well.
 
 ```{r}
 my_study <- data.frame(id = c(1, 2, 3, 4, 5),
@@ -278,7 +273,6 @@ my_study$study_condition <- factor(my_study$study_condition,
 
 table(my_study$study_condition) # much better!
 ```
-
 
 # Missing Values
 
@@ -394,7 +388,6 @@ Challenge: What is the mean of non-missing values of `penguins$bill_depth_mm` fo
 
 ```
 
-
 ## Count missing values across variables
 
 What if we want to get a look at the number of missing values across our dataset?
@@ -407,7 +400,7 @@ summary(penguins)
 
 This gives us more than the missing counts, but it does include it.
 
-We could also count them explicitly.  The across() function with summarize() lets us do the same thing to all variables.  We need to use an anonymous function to do this because we need to call both sum() and is.na().  
+We could also count them explicitly. The across() function with summarize() lets us do the same thing to all variables. We need to use an anonymous function to do this because we need to call both sum() and is.na().
 
 Just like with other function in R, we declare a input argument -- here, "x", and then use x to stand in for each variable in the expression we want to compute for each column:
 
@@ -424,6 +417,3 @@ penguins %>%
 ```
 
 They both do the same thing.
-
-
-
