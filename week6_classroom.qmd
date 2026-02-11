@@ -237,6 +237,7 @@ table(my_study$study_condition) # much better!
 Base R provides some basic tools for creating and manipulating factors. We’ll supplement these with the **forcats** package, which is part of the core tidyverse. It provides tools for dealing with **cat**egorical variables (and it’s an anagram of factors!) using a wide range of helpers for working with factors.
 
 ```{r}
+library(tidyverse)
 library(forcats)
 healthdata <- readr::read_csv("data/nhanes.csv")
 ```
@@ -336,7 +337,23 @@ starwars  %>%
   count(skin_color, sort = TRUE)
 ```
 
-# Missing Values
+### EXERCISE
+
+Convert the variable `sleep_hours` into a factor to have the following levels: "less than 6 hours", "6-9 hours" and "more than 9 hours". Add NA as a level for any missing data points.
+
+```{r}
+
+```
+
+### EXERCISE
+
+Create a bar-chart visualization for the `income_poverty_ratio` by `work_status`. Order the plot by increasing value of `income_poverty_ratio`
+
+```{r}
+
+```
+
+# Missing data
 
 We've seen missing values a few times, but let's review to make sure we covered everything:
 
@@ -370,112 +387,138 @@ mean(x)
 mean(x, na.rm=TRUE)
 ```
 
-If we don't want the missing rows included in our results above when we were selecting rows of penguins:
+For data frames, remember that `is.na` can also take an entire data frame as input. Therefore, summing over each column provides the missing count for each variable in the data.
 
 ```{r}
-penguins$bill_length_mm
+colSums(is.na(healthdata))
+```
 
-is.na(penguins$bill_length_mm)
+Let's suppose you are analyzing the correlation between the first and last measurements of systolic blood pressure. However, you notice that there are missing values in these measurements. There are a few different ways to deal with them.
 
+## Drop missing values
 
-!is.na(penguins$bill_length_mm)  # ! is not
+```{r}
+healthdata %>% 
+  select(bp_sys1, bp_sys3)
 
+cor(healthdata$bp_sys1, healthdata$bp_sys3)
+cor(healthdata$bp_sys1, healthdata$bp_sys3, use="pairwise.complete.obs")
 
-penguins[ !is.na(penguins$bill_length_mm)   ,  ]
+# tidyverse
+healthdata_subset <- 
+  healthdata %>% 
+  filter(!is.na(bp_sys1), !is.na(bp_sys3)) 
 
-dim(penguins)
+healthdata_subset %>% 
+  select(bp_sys1, bp_sys3)
 
-# not missing bill length AND bill length < 34
-
-!is.na(penguins$bill_length_mm) &  penguins$bill_length_mm < 34
-
-penguins[!is.na(penguins$bill_length_mm) & penguins$bill_length_mm < 34, ]
-dim(penguins[!is.na(penguins$bill_length_mm) & penguins$bill_length_mm < 34, ])
-
-penguins[penguins$bill_length_mm < 34, ]
-dim(penguins[penguins$bill_length_mm < 34, ])
+cor(healthdata_subset$bp_sys1, healthdata_subset$bp_sys3)
 ```
 
 The function `complete.cases()` can be used to find which rows have no missing values at all:
 
 ```{r}
-complete.cases(penguins)
+complete.cases(healthdata)
+complete.cases(healthdata) %>% sum()
 
-penguins[ !complete.cases(penguins) , ]
-
-
-dim(penguins)
-
-penguins[complete.cases(penguins), ] ## effectively drops rows with any missing values
-dim(penguins[complete.cases(penguins), ])
+healthdata %>% 
+  filter(complete.cases(healthdata))
 ```
 
 The function `na.omit()` can be used to shorten the above calls, it directly returns the subset of data with complete cases.
 
 ```{r}
-na.omit(penguins) # is the same as code chunk above
-dim(na.omit(penguins))
+na.omit(healthdata)
 ```
 
-## EXERCISE
-
-How many missing values in `penguins$bill_depth_mm`?
-
-What is the mean of the non-missing values of `penguins$bill_depth_mm`?
+But notice that doing so reduces your sample size from 800 observations to 573 observations. Moreover, if the data is not missing at random, you might be biasing the dataset in an unknown manner. For example, what if the missing observations differ from the non-missing observations in a manner that would affect your conclusions?
 
 ```{r}
-penguins$bill_depth_mm 
-is.na(penguins$bill_depth_mm)
-sum(is.na(penguins$bill_depth_mm))
-
-
-is.na(penguins$bill_depth_mm) # missing
-!is.na(penguins$bill_depth_mm) # not missing
-penguins$bill_depth_mm[ !is.na(penguins$bill_depth_mm) ] # index with not missing
-mean(penguins$bill_depth_mm[ !is.na(penguins$bill_depth_mm) ]) # mean of not missing
-
-# same as
-mean(penguins$bill_depth_mm, na.rm=TRUE)
+healthdata %>% 
+  group_by(is.na(bp_sys1)) %>% 
+  summarise(
+    across(c("age", "pulse", "cholesterol", "sleep_hours", "bp_sys2", "bp_sys3"), ~mean(.x, na.rm=T)))
 ```
 
-Challenge: Select the rows from penguins where `penguins$bill_depth_mm` is missing.
+What might you conclude from the above analysis?
+
+## Recode or impute missing values
+
+Imputation involves replacing missing values with estimated values such as mean, median, mode or regression predictions, to maintain dataset size and reduce bias.
+
+For instance, you might choose to perform a mean imputation - missing values are replaced by the mean of the variable across the entire dataset.
+
+```{r}
+# calculate the mean for selected variables
+healthdata %>% 
+  select("age", "pulse", "cholesterol", "sleep_hours", "bp_sys1", "bp_sys2", "bp_sys3") %>% 
+  summarise(across(everything(), ~mean(.x, na.rm=T)))
+
+
+# check how many observations remain if all missing values are removed 
+healthdata %>% 
+  select("age", "pulse", "cholesterol", "sleep_hours", "bp_sys1", "bp_sys2", "bp_sys3") %>% 
+  na.omit()
+
+# check how many observations remain if all missing values are imputed 
+healthdata %>% 
+  mutate(
+    across(
+      c("age", "pulse", "cholesterol", "sleep_hours", "bp_sys1", "bp_sys2", "bp_sys3"),
+      ~ifelse(is.na(.x), mean(.x, na.rm=T), .x)
+    )
+  ) %>% 
+  select("age", "pulse", "cholesterol", "sleep_hours", "bp_sys1", "bp_sys2", "bp_sys3") %>% 
+  na.omit()
+
+```
+
+However, we did get a hint that perhaps blood pressure measurements might not be missing at random - so is mean imputation a good idea?
+
+Another option might be to impute based on other observations that are "neighbors" of the missing observation. This takes into consideration that there might be "sub-groups" in your data, or there might be correlations between variables such that simple imputation methods might distort the data.
+
+## Data decisions
+
+**When to Consider Deleting Missing Rows**:
+
+-   **Minimal Missing Data:** If the missing data is slight and seemingly random, eliminating those incomplete entries is unlikely to significantly affect the dataset's overall quality.
+
+-   **MCAR Data:** Deletion is most appropriate when the missing data is Missing Completely At Random (MCAR), meaning there's no systematic difference between the missing and observed values.
+
+    Optionally you could perform:
+
+    **Partial imputation:** Choose to impute only certain columns if other columns just have trivial missingness.
+
+    **Whole data imputation:** Choose to impute only certain columns if other columns just have trivial missingness. However, in this case it is important to ensure that data are MCAR, and that any claimed statistical results stand irrespective of the method chosen for imputing values.
+
+See [this resource](https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/mi.html) for imputation decisions and how to do advanced imputing in R.
+
+### EXERCISE
+
+Compute `n_missing` and `pct_missing` for every column in healthdata. List the **top 10** variables by `pct_missing`.
 
 ```{r}
 
 ```
 
-Challenge: What is the mean of non-missing values of `penguins$bill_depth_mm` for penguins of species Gentoo?
+**Check your work**: Are there variables with *very high* missingness (e.g., \> 50%)?
+
+### EXERCISE
+
+Compute the percentage of missing data for `cholestrol` by age_decade. Also compute the mean `cholestrol` for each group.
 
 ```{r}
 
 ```
 
-## Count missing values across variables
+**Check your work**: Are the percentages similar across groups, or noticeably different? Is cholesterol correlated with age-group?
 
-What if we want to get a look at the number of missing values across our dataset?
+### EXERCISE
 
-One option is the summary() function:
-
-```{r}
-summary(penguins)
-```
-
-This gives us more than the missing counts, but it does include it.
-
-We could also count them explicitly. The across() function with summarize() lets us do the same thing to all variables. We need to use an anonymous function to do this because we need to call both sum() and is.na().
-
-Just like with other function in R, we declare a input argument -- here, "x", and then use x to stand in for each variable in the expression we want to compute for each column:
+Impute the missing values in `pulse`. You can impute by any method you choose.
 
 ```{r}
-penguins %>%
-  summarize(across(everything(), \(x) sum(is.na(x))))
+
 ```
 
-There's another syntax for anonymous functions that you might see instead:
-
-```{r}
-penguins %>%
-  summarize(across(everything(), ~sum(is.na(.x))))
-```
-
-They both do the same thing.
+**Check your work**: Is pulse Missing Completely At Random MCAR in the data? How would you check this?
